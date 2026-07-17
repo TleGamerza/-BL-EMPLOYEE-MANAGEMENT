@@ -3,7 +3,7 @@
 // ==========================================
 const WAREHOUSE_LAT = 14.027750; 
 const WAREHOUSE_LON = 100.375694; 
-const MAX_DISTANCE_METERS = 10000; 
+const MAX_DISTANCE_METERS = 4000; 
 
 const checkinSection = document.getElementById('checkin-section');
 const registerSection = document.getElementById('register-section');
