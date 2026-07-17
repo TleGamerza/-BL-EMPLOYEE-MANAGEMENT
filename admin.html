@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Employee Shift System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .search-box { margin-bottom: 10px; position: relative; }
+        .search-box input { padding-left: 35px !important; }
+        .search-box i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
+        .employee-checkbox-list {
+            max-height: 150px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 8px;
+            padding: 8px; background-color: #f8fafc; margin-bottom: 12px;
+        }
+        .employee-item { display: flex; align-items: center; gap: 8px; padding: 6px 4px; border-bottom: 1px solid #f1f5f9; }
+        .employee-item:last-child { border-bottom: none; }
+        .employee-item input[type="checkbox"] { width: auto; cursor: pointer; }
+        .employee-item label { margin-bottom: 0; cursor: pointer; font-weight: 400; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <!-- 🎨 กล่องเลือกธีมสีพื้นหลัง (Theme Selector) -->
+<div class="theme-selector">
+    <button class="theme-btn theme-white" onclick="changeTheme('white')" title="ธีมสีขาว"></button>
+    <button class="theme-btn theme-pink" onclick="changeTheme('pink')" title="ธีมสีชมพู"></button>
+    <button class="theme-btn theme-black" onclick="changeTheme('black')" title="ธีมสีดำ"></button>
+</div>
+
+    <div id="admin-login-section" class="container">
+        <div class="card">
+            <h2><i class="fa-solid fa-lock" style="color: #3b82f6;"></i> ระบบควบคุมพนักงาน (HR)</h2>
+            <form id="admin-login-form">
+                <div class="form-group">
+                    <label for="admin-password">กรอกรหัสผ่านควบคุม:</label>
+                    <input type="password" id="admin-password" placeholder="พิมพ์รหัสผ่านผู้ดูแลระบบ" required>
+                </div>
+                <button type="submit" class="btn-modern btn-prime" style="width: 100%; padding: 12px; font-size: 1rem;">เข้าสู่ระบบ Dashboard</button>
+            </form>
+            <div style="text-align: center; margin-top: 20px;">
+                <a href="index.html" class="link-btn"><i class="fa-solid fa-arrow-left"></i> กลับหน้าเช็คอินพนักงาน</a>
+            </div>
+        </div>
+    </div>
+
+    <div id="admin-dashboard-section" class="admin-container hidden">
+        
+        <div class="nav-bar">
+            <h2><i class="fa-solid fa-chart-pie" style="color: #3b82f6;"></i> แผงจัดการระบบลงเวลาและโควตากะงาน</h2>
+            <button id="btn-logout" class="btn-modern btn-dang"><i class="fa-solid fa-power-off"></i> ออกจากระบบ</button>
+        </div>
+
+        <div class="grid-layout">
+            
+            <div class="left-column">
+                
+                <div class="card">
+                    <h3><i class="fa-solid fa-list-check" style="color: #10b981;"></i> แผนก & จัดการโควตาเข้างาน</h3>
+                    <form id="dept-manager-form">
+                        <div class="form-group">
+                            <label>ชื่อแผนกใหม่:</label>
+                            <input type="text" id="manage-dept-name" required placeholder="เช่น IT, แพ็คของ, ขนส่ง">
+                        </div>
+                        <div class="form-group">
+                            <label>จำนวนโควตารองรับสูงสุด (คน):</label>
+                            <input type="number" id="manage-dept-limit" min="1" required placeholder="เช่น 15">
+                        </div>
+                        <button type="submit" id="btn-submit-dept" class="btn-modern btn-succ" style="width: 100%;"><i class="fa-solid fa-plus"></i> เพิ่มหรือบันทึกแผนก</button>
+                    </form>
+
+                    <table id="dept-table">
+                        <thead>
+                            <tr>
+                                <th>ชื่อแผนก</th>
+                                <th>โควตา (มาแล้ว/จำกัด)</th>
+                                <th style="text-align: center;">การจัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <div class="card">
+                    <h3><i class="fa-solid fa-user-lock" style="color: #ef4444;"></i> ระบบจองแผนกล่วงหน้า (Multi-Select)</h3>
+                    <form id="lock-employee-form">
+                        <div class="form-group">
+                            <label>ค้นหาและเลือกพนักงาน:</label>
+                            <div class="search-box">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                                <input type="text" id="emp-search-input" placeholder="พิมพ์เพื่อค้นหาพนักงาน...">
+                            </div>
+                            <div class="employee-checkbox-list" id="emp-checkbox-container"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>แผนกที่ต้องการระบุสิทธิ์จอง:</label>
+                            <select id="lock-select-department" required></select>
+                        </div>
+                        <button type="submit" class="btn-modern btn-dang" style="width: 100%;"><i class="fa-solid fa-lock"></i> ยืนยันการจองสิทธิ์กลุ่มที่เลือก</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="margin-bottom:0;"><i class="fa-solid fa-user-clock" style="color: #3b82f6;"></i> รายชื่อพนักงานเข้างานวันนี้</h3>
+                    <button id="btn-clear-all-today" class="btn-modern btn-dang"><i class="fa-solid fa-trash-can"></i> ล้างข้อมูลวันนี้ทั้งหมด</button>
+                </div>
+                <table id="attendance-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 22%;">เลขบัตรประชาชน</th>
+                            <th style="width: 28%;">ชื่อ / แผนกงาน</th>
+                            <th style="width: 25%; text-align: center;">เวลาเข้างาน</th>
+                            <th style="width: 25%; text-align: center;">การจัดการกะ & OT</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3><i class="fa-solid fa-user-ninja" style="color: #f59e0b;"></i> พนักงานที่ไม่ได้เข้างานนานเกิน 7 วัน (พิจารณาคัดชื่อออก)</h3>
+            <table id="inactive-employees-table">
+                <thead>
+                    <tr style="background-color: #fff5f5;">
+                        <th>เลขบัตรประชาชน</th>
+                        <th>ชื่อ-นามสกุล</th>
+                        <th>ความเคลื่อนไหวล่าสุด</th>
+                        <th style="text-align: center;">การจัดการบัญชี</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h3><i class="fa-solid fa-database" style="color: #64748b;"></i> ทำเนียบพนักงานที่ลงทะเบียนในระบบทั้งหมด</h3>
+            <table id="all-employees-table">
+                <thead>
+                    <tr>
+                        <th>เลขบัตรประชาชน</th>
+                        <th>ชื่อ-นามสกุล</th>
+                        <th>เบอร์โทรศัพท์</th>
+                        <th>ความเคลื่อนไหวล่าสุด / สถานะล็อกสิทธิ์</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>

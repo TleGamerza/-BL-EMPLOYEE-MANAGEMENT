@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบลงเวลาเข้างานพนักงานโกดัง</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- 🎨 กล่องเลือกธีมสีพื้นหลัง (Theme Selector) -->
+    <div class="theme-selector">
+        <button class="theme-btn theme-white" onclick="changeTheme('white')" title="ธีมสีขาว"></button>
+        <button class="theme-btn theme-pink" onclick="changeTheme('pink')" title="ธีมสีชมพู"></button>
+        <button class="theme-btn theme-black" onclick="changeTheme('black')" title="ธีมสีดำ"></button>
+    </div>
+
+    <div class="container">
+        <!-- 📇 ส่วนเช็คอินเข้างานประจำวัน -->
+        <div id="checkin-section" class="card">
+            <h2>ระบบลงเวลาเข้างานพนักงานโกดัง</h2>
+            <form id="checkin-form">
+                <div class="form-group">
+                    <label for="citizen-id">กรอกเลขบัตรประชาชน 13 หลัก:</label>
+                    <input type="text" id="citizen-id" maxlength="13" placeholder="ตัวอย่าง: 1101000120748" required>
+                </div>
+                <div class="form-group">
+                    <label for="department-select">เลือกแผนกที่ต้องการลงงานวันนี้:</label>
+                    <select id="department-select" required>
+                        <option value="">-- กรุณาเลือกแผนก --</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-success">
+                    <i class="fa-solid fa-location-dot"></i> ตรวจสอบข้อมูลและเช็คอิน
+                </button>
+            </form>
+            <div style="text-align: center; margin-top: 20px;">
+                <a href="admin.html" class="link-btn">→ เข้าสู่ระบบสำหรับแอดมิน (HR)</a>
+            </div>
+        </div>
+
+        <!-- 📝 ส่วนลงทะเบียนพนักงานใหม่ (จะเปิดอัตโนมัติถ้าไม่มี ID ในระบบ) -->
+        <div id="register-section" class="card hidden">
+            <h2>ลงทะเบียนประวัติพนักงานใหม่</h2>
+            <form id="register-form">
+                <div class="form-group">
+                    <label for="firstname">ชื่อจริง:</label>
+                    <input type="text" id="firstname" required>
+                </div>
+                <div class="form-group">
+                    <label for="lastname">นามสกุล:</label>
+                    <input type="text" id="lastname" required>
+                </div>
+                <div class="form-group">
+                    <label for="phone">เบอร์โทรศัพท์:</label>
+                    <input type="tel" id="phone" maxlength="10" required>
+                </div>
+                <button type="submit" class="btn">
+                    <i class="fa-solid fa-user-plus"></i> บันทึกประวัติและเช็คอินทันที
+                </button>
+            </form>
+        </div>
+
+        <!-- 🚪 ส่วนบันทึกเวลาเลิกงาน / ทำ OT (แสดงอยู่หน้าแรกคู่กับเช็คอิน) -->
+        <div id="checkout-section" class="card" style="margin-top: 20px;">
+            <h3><i class="fa-solid fa-door-open"></i> บันทึกเวลาเลิกงาน / ต่อกะ OT</h3>
+            <form id="checkout-form" onsubmit="event.preventDefault();">
+                <div class="form-group">
+                    <label for="checkout-citizen-id">กรอกเลขบัตรประชาชน 13 หลัก:</label>
+                    <input type="text" id="checkout-citizen-id" maxlength="13" placeholder="กรอกรหัสของคุณเพื่อออกจากกะ" required>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" id="btn-action-checkout" class="btn" style="background: linear-gradient(135deg, #64748b 0%, #475569 100%); box-shadow: 0 4px 12px rgba(100, 116, 139, 0.2);">
+                        <i class="fa-solid fa-business-time"></i> เลิกงานปกติ
+                    </button>
+                    <button type="button" id="btn-action-ot" class="btn" style="background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%); box-shadow: 0 4px 12px rgba(234, 88, 12, 0.2);">
+                        <i class="fa-solid fa-fire"></i> บันทึกเข้ากะ OT
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 💳 หน้าจอบัตรประจำตัวพนักงาน E-Card Premium Widget -->
+        <div id="badge-section" class="badge-screen hidden">
+            <div class="badge-content">
+                <div id="badge-date"></div>
+                <div id="badge-clock">00:00:00</div>
+                
+                <div class="badge-card-premium">
+                    <div class="ecard-header">
+                        <span class="company-logo"><i class="fa-solid fa-warehouse"></i> BL WAREHOUSE</span>
+                        <span class="ecard-type">DIGITAL PASS</span>
+                    </div>
+                    <div class="ecard-body">
+                        <div class="avatar-placeholder">
+                            <i class="fa-solid fa-user-tie"></i>
+                        </div>
+                        <div id="badge-name" class="emp-name-premium">พนักงาน รายวัน</div>
+                        <div id="badge-dept" class="emp-dept-premium">แผนกวันนี้: -</div>
+                        
+                        <div id="badge-ot-detail" style="margin-top: 15px; font-size: 0.9rem; color: #475569; line-height: 1.6;"></div>
+                        <div id="badge-cash-amount" style="margin-top: 15px; display: none;"></div>
+                    </div>
+                    <div class="ecard-footer">
+                        <span class="fake-barcode">|||| | || ||| || |||</span>
+                        <span id="badge-status-tag" class="status-tag-premium">สแกนผ่าน GPS เรียบร้อย</span>
+                    </div>
+                </div>
+                
+                <button id="btn-back" class="btn-clear">กลับหน้าหลัก</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

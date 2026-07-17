@@ -1,0 +1,339 @@
+/* ==========================================
+   ✨ PREMIUM CLEAN, MODERN & MOBILE-FRIENDLY THEME
+   ========================================== */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Sarabun', 'Prompt', sans-serif;
+}
+
+body {
+    background-color: #f8fafc;
+    color: #0f172a;
+    padding: 20px;
+    line-height: 1.5;
+    -webkit-tap-highlight-color: transparent;
+    transition: background-color 0.3s ease;
+}
+
+.container {
+    width: 100%;
+    max-width: 500px;
+    margin: 40px auto;
+}
+
+.admin-container {
+    width: 100%;
+    max-width: 1300px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
+.card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 30px;
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.03);
+    border: 1px solid #e2e8f0;
+    width: 100%;
+}
+
+.nav-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    padding: 18px 30px;
+    border-radius: 16px;
+    color: #ffffff;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15);
+    gap: 15px;
+}
+
+.nav-bar h2 {
+    color: #ffffff;
+    font-size: 1.35rem;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-align: left;
+}
+
+.grid-layout {
+    display: grid;
+    grid-template-columns: 1fr 1.3fr;
+    gap: 25px;
+    align-items: start;
+}
+
+.left-column {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    width: 100%;
+}
+
+h2 {
+    color: #de1c60;
+    font-size: 1.45rem;
+    margin-bottom: 20px;
+    text-align: center;
+    font-weight: 600;
+}
+
+h3 {
+    color: #1e293b;
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    color: #475569;
+    font-size: 0.9rem;
+}
+
+input[type="text"], input[type="password"], input[type="number"], input[type="tel"], select {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 1rem;
+    background-color: #f8fafc;
+    transition: all 0.2s ease;
+    color: #334155;
+}
+
+input:focus, select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    background-color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #ffffff;
+    background: linear-gradient(135deg, #de1c60 0%, #b01046 100%);
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(222, 28, 96, 0.2);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 15px rgba(222, 28, 96, 0.3);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+.hidden { display: none !important; }
+.link-btn { color: #3b82f6; text-decoration: none; font-size: 0.9rem; font-weight: 500; }
+
+table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 15px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+}
+
+th {
+    background-color: #f8fafc;
+    color: #475569;
+    font-weight: 600;
+    padding: 14px 12px;
+    border-bottom: 2px solid #edf2f7;
+    font-size: 0.875rem;
+}
+
+td {
+    padding: 16px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+    vertical-align: middle;
+    font-size: 0.925rem;
+    background-color: #ffffff;
+}
+
+tr:last-child td { border-bottom: none; }
+tr:hover td { background-color: #f8fafc; }
+
+.status-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 14px;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background-color: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+    white-space: nowrap;
+}
+
+.btn-modern {
+    padding: 10px 18px;
+    border-radius: 10px;
+    border: none;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 2px 4px rgba(15, 23, 42, 0.05);
+}
+
+.btn-table-action {
+    padding: 6px 14px !important;
+    font-size: 0.8rem !important;
+    border-radius: 6px !important;
+    white-space: nowrap !important; 
+    display: inline-flex !important;
+    width: auto !important;
+}
+
+.btn-modern:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+    filter: brightness(1.05);
+}
+
+.btn-prime { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; }
+.btn-dang { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; }
+.btn-neut { background: linear-gradient(135deg, #64748b 0%, #475569 100%); color: white; }
+.btn-warn { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; }
+
+.lock-badge {
+    background-color: #fee2e2;
+    color: #ef4444;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: 1px solid #fecaca;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* ==========================================
+   💳 DIGITAL E-CARD WIDGET
+   ========================================== */
+.badge-screen {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    z-index: 999;
+}
+.badge-content { width: 100%; max-width: 380px; text-align: center; }
+#badge-date { color: rgba(255, 255, 255, 0.9); font-size: 1.1rem; margin-bottom: 4px; font-weight: 500; }
+#badge-clock { color: #ffffff; font-size: 2.8rem; font-weight: 700; margin-bottom: 25px; }
+
+.badge-card-premium {
+    background: #ffffff;
+    width: 100%;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+}
+.ecard-header { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #de1c60; }
+.company-logo { color: #ffffff; font-weight: 700; font-size: 1rem; }
+.ecard-type { font-size: 0.75rem; background-color: rgba(222, 28, 96, 0.15); color: #de1c60; padding: 3px 8px; border-radius: 6px; font-weight: 600; }
+.ecard-body { padding: 30px 20px; text-align: center; }
+.avatar-placeholder { width: 80px; height: 80px; background-color: #f1f5f9; border-radius: 50%; margin: 0 auto 15px auto; display: flex; justify-content: center; align-items: center; color: #94a3b8; font-size: 2.2rem; }
+.emp-name-premium { font-size: 1.35rem; font-weight: 600; color: #0f172a; margin-bottom: 4px; }
+.emp-dept-premium { font-size: 1rem; color: #de1c60; font-weight: 500; }
+.ecard-footer { background-color: #f8fafc; padding: 12px 20px; border-top: 1px dashed #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
+.fake-barcode { font-family: monospace; font-size: 0.8rem; color: #64748b; }
+.status-tag-premium { display: inline-flex; align-items: center; gap: 4px; background-color: #e6fbf1; color: #059669; padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 0.75rem; }
+
+.btn-clear {
+    background: rgba(255, 255, 255, 0.25); border: 2px solid #ffffff; color: #ffffff;
+    padding: 10px 24px; border-radius: 50px; font-size: 0.95rem; font-weight: 600; margin-top: 25px; cursor: pointer; backdrop-filter: blur(5px);
+}
+
+/* ==========================================
+   🎨 THEME SELECTOR STYLES
+   ========================================== */
+.theme-selector {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin: 15px auto;
+    background: #ffffff;
+    padding: 8px 16px;
+    border-radius: 50px;
+    width: fit-content;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+    border: 1px solid #e2e8f0;
+}
+.theme-btn { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #cbd5e1; cursor: pointer; transition: all 0.2s ease; }
+.theme-btn:hover { transform: scale(1.15); }
+.theme-white { background-color: #f8fafc; border-color: #cbd5e1; }
+.theme-pink { background-color: #fff1f2; border-color: #fda4af; }
+.theme-black { background-color: #0f172a; border-color: #334155; }
+
+body.theme-mode-white { background-color: #f8fafc !important; }
+body.theme-mode-pink { background-color: #fff1f2 !important; }
+body.theme-mode-black { background-color: #0f172a !important; }
+
+body.theme-mode-black .card, body.theme-mode-black .nav-bar { background: #1e293b; border-color: #334155; }
+body.theme-mode-black label { color: #94a3b8; }
+body.theme-mode-black h3, body.theme-mode-black h2 { color: #f1f5f9; }
+body.theme-mode-black th { background-color: #1e293b; color: #94a3b8; border-bottom: 2px solid #334155; }
+body.theme-mode-black td { background-color: #1e293b; color: #e2e8f0; border-bottom: 1px solid #334155; }
+body.theme-mode-black tr:hover td { background-color: #334155; }
+body.theme-mode-black .theme-selector { background: #1e293b; border-color: #334155; }
+
+/* ==========================================
+   📱 MOBILE RESPONSIVE QUERIES
+   ========================================== */
+@media (max-width: 991px) {
+    body { padding: 12px; }
+    .container { margin: 20px auto; }
+    .nav-bar { flex-direction: column; align-items: stretch; padding: 15px; text-align: center; gap: 12px; }
+    .nav-bar h2 { justify-content: center; font-size: 1.15rem; }
+    .nav-bar div { display: flex; justify-content: center; }
+    .grid-layout { grid-template-columns: 1fr; gap: 20px; }
+    .card { padding: 20px 15px; }
+    table { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    th, td { padding: 12px 10px !important; font-size: 0.85rem !important; }
+    #checkout-form div[style*="display: flex"] { flex-direction: column !important; gap: 10px !important; }
+}
