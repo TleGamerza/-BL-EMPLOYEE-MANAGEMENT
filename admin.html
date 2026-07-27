@@ -6,7 +6,7 @@
     <title>Admin Dashboard - Employee Shift System</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=5">
     <style>
         .search-box { margin-bottom: 10px; position: relative; }
         .search-box input { padding-left: 35px !important; }
@@ -82,6 +82,65 @@
                     </table>
                 </div>
 
+                <div class="card" style="margin-top: 20px;">
+                    <h3><i class="fa-solid fa-business-time" style="color: #8b5cf6;"></i> ตั้งเวลา เปิด-ปิด ระบบเช็คอิน</h3>
+                    <form id="checkin-window-form">
+                        <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+                            <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                                <label>เวลาเปิด (Start Time):</label>
+                                <input type="time" id="checkin-start" required style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1;">
+                            </div>
+                            <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                                <label>เวลาปิด (End Time):</label>
+                                <input type="time" id="checkin-end" required style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1;">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-modern btn-prime" style="width: 100%;"><i class="fa-solid fa-save"></i> บันทึกเวลาเปิด-ปิด</button>
+                    </form>
+                </div>
+
+                <div class="card" style="margin-top: 20px;">
+                    <h3><i class="fa-solid fa-fire" style="color: #ea580c;"></i> ตั้งค่าเปิด-ปิด รับเข้ากะ OT</h3>
+                    <form id="ot-window-form">
+                        <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+                            <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                                <label>เวลาเปิดรับ OT:</label>
+                                <input type="time" id="ot-start" required style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1;">
+                            </div>
+                            <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                                <label>เวลาปิดรับ OT:</label>
+                                <input type="time" id="ot-end" required style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1;">
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 16px;">
+                            <label>จำนวนที่รับโควตา OT (คน):</label>
+                            <input type="number" id="ot-limit" required min="1" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1;">
+                        </div>
+                        <button type="submit" class="btn-modern btn-neut" style="width: 100%; background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);"><i class="fa-solid fa-save"></i> บันทึกตั้งค่า OT</button>
+                    </form>
+                    <div style="margin-top: 15px; padding: 10px; background: #f8fafc; border-radius: 8px; text-align: center; border: 1px dashed #cbd5e1;">
+                        <span style="color: #475569; font-weight: 600;">คนเข้า OT ปัจจุบัน: <span id="ot-current-display" style="color: #ea580c; font-size: 1.2rem;">0</span> คน</span>
+                    </div>
+                </div>
+
+            </div>
+            
+            <div class="left-column">
+                <div class="card">
+                    <h3><i class="fa-solid fa-bullhorn" style="color: #f59e0b;"></i> ป้ายประกาศข่าวสาร (Announcement Board)</h3>
+                    <form id="announcement-form">
+                        <div class="form-group">
+                            <label>ข้อความประกาศ:</label>
+                            <textarea id="announcement-input" rows="3" placeholder="ตัวอย่าง: ประกาศด่วน! วันนี้ OT 3 ชั่วโมง" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; resize: vertical;"></textarea>
+                        </div>
+                        <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                            <input type="checkbox" id="announcement-active" style="width: 20px; height: 20px;">
+                            <label for="announcement-active" style="margin-bottom: 0; cursor: pointer;">เปิดแสดงป้ายประกาศให้พนักงานเห็น</label>
+                        </div>
+                        <button type="submit" class="btn-modern btn-succ" style="width: 100%;"><i class="fa-solid fa-broadcast-tower"></i> บันทึกและเผยแพร่ประกาศ</button>
+                    </form>
+                </div>
+                
                 <div class="card">
                     <h3><i class="fa-solid fa-user-lock" style="color: #ef4444;"></i> ระบบจองแผนกล่วงหน้า (Multi-Select)</h3>
                     <form id="lock-employee-form">
@@ -102,27 +161,70 @@
                 </div>
             </div>
 
-            <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h3 style="margin-bottom:0;"><i class="fa-solid fa-user-clock" style="color: #3b82f6;"></i> รายชื่อพนักงานเข้างานวันนี้</h3>
-                    <button id="btn-clear-all-today" class="btn-modern btn-dang"><i class="fa-solid fa-trash-can"></i> ล้างข้อมูลวันนี้ทั้งหมด</button>
+        </div>
+
+        <div class="card" style="margin-top: 25px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                <h3 style="margin-bottom:0;"><i class="fa-solid fa-user-clock" style="color: #3b82f6;"></i> รายชื่อพนักงานเข้างานวันนี้</h3>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="time" id="auto-clear-time" style="padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1;">
+                    <button id="btn-set-auto-clear" class="btn-modern btn-prime"><i class="fa-solid fa-clock"></i> ตั้งเวลาลบ</button>
+                    <button id="btn-clear-all-today" class="btn-modern btn-dang"><i class="fa-solid fa-trash-can"></i> ลบเดี๋ยวนี้</button>
                 </div>
-                <table id="attendance-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 22%;">เลขบัตรประชาชน</th>
-                            <th style="width: 28%;">ชื่อ / แผนกงาน</th>
-                            <th style="width: 25%; text-align: center;">เวลาเข้างาน</th>
-                            <th style="width: 25%; text-align: center;">การจัดการกะ & OT</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
             </div>
+            <div id="auto-clear-status" style="font-size: 0.95rem; color: #059669; margin-bottom: 15px; display: none; background: #ecfdf5; padding: 10px 15px; border-radius: 6px; border: 1px solid #a7f3d0; align-items: center; justify-content: space-between;">
+                <div><i class="fa-solid fa-circle-check"></i> ระบบจะล้างข้อมูลอัตโนมัติเวลา: <span id="auto-clear-time-display" style="font-weight: bold; font-size: 1.05rem; margin-left: 5px;"></span> น.</div>
+                <button id="btn-cancel-auto-clear" style="background: none; border: none; color: #ef4444; cursor: pointer; text-decoration: underline; font-size: 0.9rem;"><i class="fa-solid fa-xmark"></i> ยกเลิกการตั้งเวลา</button>
+            </div>
+            <div class="search-box" style="max-width: 380px; margin-bottom: 15px;">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="attendance-search-input" placeholder="พิมพ์ชื่อ, แผนก หรือเลข ปชช. เพื่อค้นหา...">
+            </div>
+            <table id="attendance-table">
+                <thead>
+                    <tr>
+                        <th style="width: 22%;">เลขบัตรประชาชน</th>
+                        <th style="width: 28%;">ชื่อ / แผนกงาน</th>
+                        <th style="width: 25%; text-align: center;">เวลาเข้างาน</th>
+                        <th style="width: 25%; text-align: center;">การจัดการกะ & OT</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
         </div>
 
         <div class="card">
-            <h3><i class="fa-solid fa-user-ninja" style="color: #f59e0b;"></i> พนักงานที่ไม่ได้เข้างานนานเกิน 7 วัน (พิจารณาคัดชื่อออก)</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                <h3 style="margin-bottom:0;"><i class="fa-solid fa-clock-rotate-left" style="color: #8b5cf6;"></i> ประวัติย้อนหลัง & ดาวน์โหลด Excel (History Log)</h3>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="date" id="history-date-picker" style="padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1;">
+                    <button id="btn-export-excel" class="btn-modern" style="background-color: #de1c60; color: white;"><i class="fa-solid fa-file-excel"></i> ดาวน์โหลด Excel</button>
+                </div>
+            </div>
+            <table id="history-table">
+                <thead>
+                    <tr style="background-color: #f8fafc;">
+                        <th>วันที่</th>
+                        <th>รหัส ปชช.</th>
+                        <th>ชื่อพนักงาน / แผนก</th>
+                        <th>เวลาเข้างาน</th>
+                        <th>เวลาเลิกงาน</th>
+                        <th>จำนวน ชม. OT</th>
+                        <th>ยอดเงิน OT</th>
+                        <th>สถานะ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- History Data -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                <h3 style="margin-bottom:0;"><i class="fa-solid fa-user-ninja" style="color: #f59e0b;"></i> พนักงานที่ไม่ได้เข้างานนานเกิน 7 วัน (พิจารณาคัดชื่อออก)</h3>
+                <button id="btn-clear-all-inactive" class="btn-modern btn-dang"><i class="fa-solid fa-users-slash"></i> ลบผู้ที่ขาดงานทั้งหมด</button>
+            </div>
             <table id="inactive-employees-table">
                 <thead>
                     <tr style="background-color: #fff5f5;">
@@ -152,6 +254,65 @@
         </div>
     </div>
 
-    <script src="admin.js"></script>
+    <!-- Modal สำหรับแก้ไขพนักงาน -->
+    <div id="emp-edit-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+        <div style="background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+            <h3 style="margin-top: 0; color: #1e293b; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;"><i class="fa-solid fa-pen-to-square"></i> แก้ไขข้อมูลพนักงาน</h3>
+            
+            <input type="hidden" id="edit-emp-old-id">
+            
+            <div class="form-group" style="margin-top: 15px;">
+                <label style="color: #475569; font-weight: 500;">เลขบัตรประชาชน (13 หลัก):</label>
+                <input type="text" id="edit-emp-id" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; margin-top: 5px;">
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <div class="form-group" style="flex: 1;">
+                    <label style="color: #475569; font-weight: 500;">ชื่อ:</label>
+                    <input type="text" id="edit-emp-fname" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; margin-top: 5px;">
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label style="color: #475569; font-weight: 500;">นามสกุล:</label>
+                    <input type="text" id="edit-emp-lname" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; margin-top: 5px;">
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 10px;">
+                <label style="color: #475569; font-weight: 500;">เบอร์โทรศัพท์ (ถ้ามี):</label>
+                <input type="text" id="edit-emp-phone" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; margin-top: 5px;">
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button onclick="saveEmployeeEdit()" class="btn-modern btn-prime" style="flex: 1;"><i class="fa-solid fa-save"></i> บันทึกข้อมูล</button>
+                <button onclick="closeEmpModal()" class="btn-modern btn-dang" style="flex: 1;"><i class="fa-solid fa-xmark"></i> ยกเลิก</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal สำหรับแก้ไขแผนก -->
+    <div id="dept-edit-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+        <div style="background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+            <h3 style="margin-top: 0; color: #1e293b; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;"><i class="fa-solid fa-pen"></i> แก้ไขข้อมูลแผนก</h3>
+            
+            <input type="hidden" id="edit-dept-index">
+            
+            <div class="form-group" style="margin-top: 15px;">
+                <label style="color:#475569; font-weight:600;">ชื่อแผนก:</label>
+                <input type="text" id="edit-dept-name" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px; margin-top:5px;">
+            </div>
+            
+            <div class="form-group" style="margin-top: 15px;">
+                <label style="color:#475569; font-weight:600;">โควตารับพนักงานสูงสุด (คน):</label>
+                <input type="number" id="edit-dept-limit" min="1" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px; margin-top:5px;">
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn-modern btn-prime" style="flex: 1; padding: 10px;" onclick="saveDepartmentEdit()">บันทึก</button>
+                <button class="btn-modern" style="flex: 1; padding: 10px; background:#94a3b8; color:white;" onclick="closeDeptModal()">ยกเลิก</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="admin.js?v=19"></script>
 </body>
 </html>

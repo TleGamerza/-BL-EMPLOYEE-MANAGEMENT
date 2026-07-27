@@ -4,15 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบลงเวลาเข้างานพนักงานโกดัง</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=5">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .hidden { display: none !important; }
+        body { transition: background-color 0.3s, color 0.3s; }
+        body.theme-white { background-color: #ffffff; color: #333333; }
+        body.theme-pink { background-color: #fce4ec; color: #333333; }
+        body.theme-black { background-color: #1a252f; color: #ffffff; }
+        body.theme-black .card { background-color: #2c3e50; border-color: #34495e; color: #ffffff; }
+        body.theme-black input, body.theme-black select { background-color: #34495e; color: white; border-color: #4f5d73; }
+    </style>
 </head>
-<body>
+<body class="theme-pink">
 
-    <!-- 🎨 กล่องเลือกธีมสีพื้นหลัง (Theme Selector) -->
+    <!-- 🎨 กล่องเลือกธีมสีพื้นหลัง -->
     <div class="theme-selector">
         <button class="theme-btn theme-white" onclick="changeTheme('white')" title="ธีมสีขาว"></button>
         <button class="theme-btn theme-pink" onclick="changeTheme('pink')" title="ธีมสีชมพู"></button>
@@ -23,30 +32,63 @@
         <!-- 📇 ส่วนเช็คอินเข้างานประจำวัน -->
         <div id="checkin-section" class="card">
             <h2>ระบบลงเวลาเข้างานพนักงานโกดัง</h2>
-            <form id="checkin-form">
-                <div class="form-group">
-                    <label for="citizen-id">กรอกเลขบัตรประชาชน 13 หลัก:</label>
-                    <input type="text" id="citizen-id" maxlength="13" placeholder="ตัวอย่าง: 1101000120748" required>
-                </div>
-                <div class="form-group">
-                    <label for="department-select">เลือกแผนกที่ต้องการลงงานวันนี้:</label>
-                    <select id="department-select" required>
-                        <option value="">-- กรุณาเลือกแผนก --</option>
-                    </select>
-                </div>
-                <button type="submit" class="btn btn-success">
-                    <i class="fa-solid fa-location-dot"></i> ตรวจสอบข้อมูลและเช็คอิน
-                </button>
-            </form>
+            <div id="announcement-banner" style="display: none; background: linear-gradient(135deg, #f59e0b, #fbbf24); color: white; padding: 12px 15px; border-radius: 8px; margin-bottom: 20px; font-weight: 600; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.2); align-items: center; gap: 10px;">
+                <i class="fa-solid fa-bullhorn fa-lg"></i> <span id="announcement-text">ข้อความประกาศ</span>
+            </div>
+            <div class="form-group">
+                <label for="citizen-id">กรอกเลขบัตรประชาชน 13 หลัก:</label>
+                <input type="text" id="citizen-id" maxlength="13" placeholder="ตัวอย่าง: 1101000120748">
+            </div>
+            <div class="form-group">
+                <label for="department-select">เลือกแผนกที่ต้องการลงงานวันนี้:</label>
+                <select id="department-select">
+                    <option value="">-- กรุณาเลือกแผนก --</option>
+                    <option value="IT">IT</option>
+                    <option value="Warehouse staff">Warehouse staff</option>
+                    <option value="Content Creator">Content Creator</option>
+                </select>
+                <div id="lock-status-message" style="margin-top: 8px; font-size: 0.9rem; color: #10b981; font-weight: bold; display: none;"></div>
+            </div>
+            <button type="button" class="btn btn-success" onclick="handleCheckIn();">
+                <i class="fa-solid fa-location-dot"></i> ตรวจสอบข้อมูลและเช็คอิน
+            </button>
             <div style="text-align: center; margin-top: 20px;">
                 <a href="admin.html" class="link-btn">→ เข้าสู่ระบบสำหรับแอดมิน (HR)</a>
             </div>
         </div>
 
-        <!-- 📝 ส่วนลงทะเบียนพนักงานใหม่ (จะเปิดอัตโนมัติถ้าไม่มี ID ในระบบ) -->
+        <!-- 🚪 ส่วนบันทึกเวลาเลิกงาน / ทำ OT -->
+        <div id="checkout-section" class="card" style="margin-top: 20px;">
+            <h3><i class="fa-solid fa-door-open"></i> บันทึกเวลาเลิกงาน / ต่อกะ OT</h3>
+            <div class="form-group">
+                <label for="checkout-citizen-id">กรอกเลขบัตรประชาชน 13 หลัก:</label>
+                <input type="text" id="checkout-citizen-id" maxlength="13" placeholder="กรอกรหัสของคุณเพื่อออกจากกะ">
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px;">
+                <button type="button" id="btn-action-checkout" onclick="handleCheckOut('normal')" class="btn" style="background: linear-gradient(135deg, #64748b 0%, #475569 100%); box-shadow: 0 4px 12px rgba(100, 116, 139, 0.2); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px 8px; gap: 8px; border: none; border-radius: 12px; color: white;">
+                    <i class="fa-solid fa-business-time" style="font-size: 1.5rem; opacity: 0.9;"></i>
+                    <span style="font-weight: 600; font-size: 0.95rem;">เลิกงานปกติ</span>
+                </button>
+                
+                <button type="button" id="btn-action-ot" onclick="handleCheckOut('ot')" class="btn" style="background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%); box-shadow: 0 4px 12px rgba(234, 88, 12, 0.2); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px 8px; gap: 6px; border: none; border-radius: 12px; color: white;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-fire" style="font-size: 1.2rem;"></i>
+                        <span style="font-weight: 600; font-size: 0.95rem;">เข้ากะ OT</span>
+                    </div>
+                    <small id="ot-btn-status" style="font-weight: 500; opacity: 1; font-size: 0.75rem; background: rgba(0,0,0,0.2); padding: 3px 10px; border-radius: 20px; text-align: center; line-height: 1.2;"></small>
+                </button>
+                
+                <button type="button" id="btn-action-ot-out" onclick="handleCheckOut('ot_out')" class="btn" style="background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px 8px; gap: 8px; border: none; border-radius: 12px; color: white;">
+                    <i class="fa-solid fa-moon" style="font-size: 1.5rem; opacity: 0.9;"></i>
+                    <span style="font-weight: 600; font-size: 0.95rem;">ออก OT</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 📝 ส่วนลงทะเบียนพนักงานใหม่ -->
         <div id="register-section" class="card hidden">
             <h2>ลงทะเบียนประวัติพนักงานใหม่</h2>
-            <form id="register-form">
+            <form id="register-form" onsubmit="event.preventDefault();">
                 <div class="form-group">
                     <label for="firstname">ชื่อจริง:</label>
                     <input type="text" id="firstname" required>
@@ -56,35 +98,19 @@
                     <input type="text" id="lastname" required>
                 </div>
                 <div class="form-group">
-                    <label for="phone">เบอร์โทรศัพท์:</label>
+                    <label for="phone">เบอร์โทรศัพท์ (10 หลัก):</label>
                     <input type="tel" id="phone" maxlength="10" required>
                 </div>
-                <button type="submit" class="btn">
-                    <i class="fa-solid fa-user-plus"></i> บันทึกประวัติและเช็คอินทันที
+                <button type="submit" class="btn btn-prime" onclick="submitRegistration();">
+                    <i class="fa-solid fa-user-plus"></i> ยืนยันการลงทะเบียน
+                </button>
+                <button type="button" class="btn btn-neut" style="margin-top: 10px;" onclick="cancelRegistration();">
+                    ยกเลิก
                 </button>
             </form>
         </div>
 
-        <!-- 🚪 ส่วนบันทึกเวลาเลิกงาน / ทำ OT (แสดงอยู่หน้าแรกคู่กับเช็คอิน) -->
-        <div id="checkout-section" class="card" style="margin-top: 20px;">
-            <h3><i class="fa-solid fa-door-open"></i> บันทึกเวลาเลิกงาน / ต่อกะ OT</h3>
-            <form id="checkout-form" onsubmit="event.preventDefault();">
-                <div class="form-group">
-                    <label for="checkout-citizen-id">กรอกเลขบัตรประชาชน 13 หลัก:</label>
-                    <input type="text" id="checkout-citizen-id" maxlength="13" placeholder="กรอกรหัสของคุณเพื่อออกจากกะ" required>
-                </div>
-                <div style="display: flex; gap: 10px;">
-                    <button type="button" id="btn-action-checkout" class="btn" style="background: linear-gradient(135deg, #64748b 0%, #475569 100%); box-shadow: 0 4px 12px rgba(100, 116, 139, 0.2);">
-                        <i class="fa-solid fa-business-time"></i> เลิกงานปกติ
-                    </button>
-                    <button type="button" id="btn-action-ot" class="btn" style="background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%); box-shadow: 0 4px 12px rgba(234, 88, 12, 0.2);">
-                        <i class="fa-solid fa-fire"></i> บันทึกเข้ากะ OT
-                    </button>
-                </div>
-            </form>
-        </div>
-
-        <!-- 💳 หน้าจอบัตรประจำตัวพนักงาน E-Card Premium Widget -->
+        <!-- 💳 หน้าจอบัตร E-Card -->
         <div id="badge-section" class="badge-screen hidden">
             <div class="badge-content">
                 <div id="badge-date"></div>
@@ -101,21 +127,18 @@
                         </div>
                         <div id="badge-name" class="emp-name-premium">พนักงาน รายวัน</div>
                         <div id="badge-dept" class="emp-dept-premium">แผนกวันนี้: -</div>
-                        
                         <div id="badge-ot-detail" style="margin-top: 15px; font-size: 0.9rem; color: #475569; line-height: 1.6;"></div>
-                        <div id="badge-cash-amount" style="margin-top: 15px; display: none;"></div>
                     </div>
                     <div class="ecard-footer">
                         <span class="fake-barcode">|||| | || ||| || |||</span>
                         <span id="badge-status-tag" class="status-tag-premium">สแกนผ่าน GPS เรียบร้อย</span>
                     </div>
                 </div>
-                
-                <button id="btn-back" class="btn-clear">กลับหน้าหลัก</button>
+                <button id="btn-back" onclick="backToMain()" class="btn-clear" style="margin-top: 20px; padding: 10px 20px; cursor: pointer;">กลับหน้าหลัก</button>
             </div>
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <script src="app.js?v=16"></script>
 </body>
 </html>

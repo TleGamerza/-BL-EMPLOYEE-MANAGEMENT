@@ -1,456 +1,581 @@
-// ==========================================
-// 1. ตั้งค่าเริ่มต้น และ พิกัดเป้าหมายหลักโกดัง
-// ==========================================
 const WAREHOUSE_LAT = 14.027750; 
 const WAREHOUSE_LON = 100.375694; 
-const MAX_DISTANCE_METERS = 4000; 
+const MAX_DISTANCE_METERS = 2000; 
 
-const checkinSection = document.getElementById('checkin-section');
-const registerSection = document.getElementById('register-section');
-const badgeSection = document.getElementById('badge-section');
-const checkinForm = document.getElementById('checkin-form');
-const registerForm = document.getElementById('register-form');
-const citizenIdInput = document.getElementById('citizen-id');
-const deptSelect = document.getElementById('department-select');
+let clockInterval = null;
 
-let currentCitizenId = ""; 
-let clockInterval; 
-
-// ฟังก์ชันจำลองรหัสเฉพาะของเครื่อง (Device ID Token)
-function getOrCreateDeviceID() {
-    let deviceID = localStorage.getItem('system_device_token');
-    if (!deviceID) {
-        deviceID = 'DEV-' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
-        localStorage.setItem('system_device_token', deviceID);
+function getOrCreateDeviceToken() {
+    let token = localStorage.getItem('warehouse_device_token');
+    if (!token) {
+        token = 'TK-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+        localStorage.setItem('warehouse_device_token', token);
     }
-    return deviceID;
-}
-
-function initDepartments() {
-    const todayStr = new Date().toDateString(); 
-    const lastResetDate = localStorage.getItem('lastResetDate');
-    
-    const defaultDepts = [
-        { name: "IT", limit: 10, current: 0 },
-        { name: "Content Creator", limit: 20, current: 0 },
-        { name: "Warehouse staff", limit: 50, current: 0 }
-    ];
-
-    if (!localStorage.getItem('departments') || lastResetDate !== todayStr) {
-        localStorage.setItem('departments', JSON.stringify(defaultDepts));
-        localStorage.setItem('attendanceToday', JSON.stringify({})); 
-        localStorage.setItem('checkoutDataToday', JSON.stringify({})); 
-        localStorage.setItem('lastResetDate', todayStr);
-    }
-}
-
-function updateDepartmentDropdown() {
-    initDepartments(); 
-    
-    const depts = JSON.parse(localStorage.getItem('departments')) || [];
-    const lockedSlots = JSON.parse(localStorage.getItem('lockedSlots')) || {};
-    
-    deptSelect.innerHTML = '<option value="">-- กรุณาเลือกแผนก --</option>'; 
-    
-    const typingCitizenId = citizenIdInput ? citizenIdInput.value.trim() : "";
-    const myLockedDept = lockedSlots[typingCitizenId];
-
-    depts.forEach(dept => {
-        const option = document.createElement('option');
-        option.value = dept.name;
-        
-        const remainingSlots = dept.limit - dept.current;
-        const isThisMyLockedDept = (myLockedDept === dept.name);
-
-        if (isThisMyLockedDept) {
-            option.disabled = false;
-            option.textContent = `⭐ ${dept.name} (${dept.current}/${dept.limit}) [หัวหน้าล็อคกะไว้ให้คุณเฉพาะ]`;
-            option.style.color = "#ef4444";
-            option.style.fontWeight = "bold";
-        } else if (remainingSlots > 0) {
-            option.textContent = `${dept.name} (${dept.current}/${dept.limit}) ยังว่าง`;
-        } else {
-            option.disabled = true; 
-            option.textContent = `${dept.name} (${dept.current}/${dept.limit}) เต็มแล้ว`;
-        }
-        
-        deptSelect.appendChild(option);
-    });
-}
-
-initDepartments();
-updateDepartmentDropdown();
-
-if (citizenIdInput) {
-    citizenIdInput.addEventListener('input', (e) => { 
-        e.target.value = e.target.value.replace(/\D/g, ''); 
-        if (e.target.value.length === 13) {
-            updateDepartmentDropdown();
-        }
-    });
-}
-
-// ==========================================
-// 3. ระบบส่งฟอร์มเช็คอินสแกนเข้างาน
-// ==========================================
-checkinForm.addEventListener('submit', (e) => {
-    e.preventDefault(); 
-    currentCitizenId = citizenIdInput.value.trim();
-    const selectedDept = deptSelect.value;
-
-    if (currentCitizenId.length !== 13) {
-        alert("กรุณากรอกเลขบัตรประชาชนให้ครบ 13 หลัก");
-        return;
-    }
-
-    if (!selectedDept) {
-        alert("กรุณาเลือกแผนกที่ต้องการลงทำงานในวันนี้");
-        return;
-    }
-
-    // 🔒 ตรรกะป้องกันตอกบัตรแทนกัน (1 เครื่องต่อ 1 ID)
-    const thisDeviceID = getOrCreateDeviceID();
-    let deviceRegistry = JSON.parse(localStorage.getItem('deviceRegistry')) || {};
-    
-    if (currentCitizenId === "1101000120748") {
-        deviceRegistry[currentCitizenId] = thisDeviceID;
-        localStorage.setItem('deviceRegistry', JSON.stringify(deviceRegistry));
-    }
-
-    let isDeviceUsedByOther = false;
-    let registeredIDForThisDevice = "";
-    for (const empId in deviceRegistry) {
-        if (deviceRegistry[empId] === thisDeviceID && empId !== currentCitizenId) {
-            isDeviceUsedByOther = true;
-            registeredIDForThisDevice = empId;
-            break;
-        }
-    }
-
-    if (isDeviceUsedByOther && currentCitizenId !== "1101000120748") {
-        alert(`❌ ปฏิเสธการเข้างาน! เครื่องนี้ถูกล็อกไว้สำหรับพนักงานรหัสท้าย (${registeredIDForThisDevice.substring(9)}) แล้ว ห้ามใช้ลงเวลาแทนกันเด็ดขาด!`);
-        return;
-    }
-
-    if (!deviceRegistry[currentCitizenId]) {
-        deviceRegistry[currentCitizenId] = thisDeviceID;
-        localStorage.setItem('deviceRegistry', JSON.stringify(deviceRegistry));
-    }
-
-    const attendanceToday = JSON.parse(localStorage.getItem('attendanceToday')) || {};
-    const lockedSlots = JSON.parse(localStorage.getItem('lockedSlots')) || {};
-    
-    const hasCheckedInToday = attendanceToday[currentCitizenId] === selectedDept;
-    const isThisMyLockedDept = lockedSlots[currentCitizenId] === selectedDept;
-
-    // กฎดักเวลาสาย: สิ้นสุดระบบรับพนักงานเพิ่มหลังเวลา 09:30 น.
-    const nowTime = new Date();
-    const currentTotalMinutes = (nowTime.getHours() * 60) + nowTime.getMinutes();
-    const deadlineMinutes = (9 * 60) + 30;
-
-    if (currentTotalMinutes > deadlineMinutes && !isThisMyLockedDept && !hasCheckedInToday) {
-        alert(`❌ ปฏิเสธการเข้างาน! ระบบปิดรับพนักงานประจำวันแล้วเมื่อเวลา 09:30 น.`);
-        return;
-    }
-
-    const employees = JSON.parse(localStorage.getItem('employees')) || {};
-    if (employees[currentCitizenId]) {
-        let employeeData = employees[currentCitizenId];
-        employeeData.currentDepartment = selectedDept; 
-        checkLocationAndCheckIn(employeeData, selectedDept);
-    } else {
-        if (currentTotalMinutes > deadlineMinutes) {
-            alert(`❌ ไม่สามารถสมัครได้! ระบบปิดรับลงทะเบียนพนักงานใหม่หลังเวลา 09:30 น.`);
-            return;
-        }
-        alert("ไม่พบข้อมูลพนักงานในระบบ กรุณาลงทะเบียนประวัติพนักงานใหม่");
-        checkinSection.classList.add('hidden');
-        if (document.getElementById('checkout-section')) {
-            document.getElementById('checkout-section').classList.add('hidden');
-        }
-        registerSection.classList.remove('hidden');
-    }
-});
-
-registerForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const selectedDept = deptSelect.value; 
-    
-    const thisDeviceID = getOrCreateDeviceID();
-    let deviceRegistry = JSON.parse(localStorage.getItem('deviceRegistry')) || {};
-    deviceRegistry[currentCitizenId] = thisDeviceID;
-    localStorage.setItem('deviceRegistry', JSON.stringify(deviceRegistry));
-
-    const newEmployee = {
-        firstname: document.getElementById('firstname').value.trim(),
-        lastname: document.getElementById('lastname').value.trim(),
-        phone: document.getElementById('phone').value.trim(),
-        department: selectedDept,
-        currentDepartment: selectedDept,
-        lastActiveTime: new Date().toISOString()
-    };
-    const employees = JSON.parse(localStorage.getItem('employees')) || {};
-    employees[currentCitizenId] = newEmployee;
-    localStorage.setItem('employees', JSON.stringify(employees));
-    checkLocationAndCheckIn(newEmployee, selectedDept);
-});
-
-function checkLocationAndCheckIn(employee, selectedDept) {
-    if (!navigator.geolocation) { alert("เบราว์เซอร์ของคุณไม่รองรับระบบ GPS"); return; }
-    alert("ระบบกำลังขอพิกัด GPS โปรดกดอนุญาต (Allow)");
-    navigator.geolocation.getCurrentPosition(
-        (position) => {
-            const userLat = position.coords.latitude;
-            const userLon = position.coords.longitude;
-            const distance = calculateDistance(userLat, userLon, WAREHOUSE_LAT, WAREHOUSE_LON);
-
-            if (distance <= MAX_DISTANCE_METERS) {
-                const attendanceToday = JSON.parse(localStorage.getItem('attendanceToday')) || {};
-                const lockedSlots = JSON.parse(localStorage.getItem('lockedSlots')) || {};
-                const wasAlreadyCountedByLock = (lockedSlots[currentCitizenId] === selectedDept);
-
-                if (attendanceToday[currentCitizenId] !== selectedDept) {
-                    const depts = JSON.parse(localStorage.getItem('departments')) || [];
-                    
-                    if (attendanceToday[currentCitizenId]) {
-                        const oldDeptIndex = depts.findIndex(d => d.name === attendanceToday[currentCitizenId]);
-                        if (oldDeptIndex !== -1 && depts[oldDeptIndex].current > 0) { depts[oldDeptIndex].current -= 1; }
-                    }
-                    
-                    const newDeptIndex = depts.findIndex(d => d.name === selectedDept);
-                    if (newDeptIndex !== -1 && !wasAlreadyCountedByLock) { 
-                        depts[newDeptIndex].current += 1; 
-                    }
-                    
-                    localStorage.setItem('departments', JSON.stringify(depts));
-                    attendanceToday[currentCitizenId] = selectedDept;
-                    localStorage.setItem('attendanceToday', JSON.stringify(attendanceToday));
-                }
-                
-                const employees = JSON.parse(localStorage.getItem('employees')) || {};
-                if(employees[currentCitizenId]) {
-                    employees[currentCitizenId].lastActiveTime = new Date().toISOString();
-                    localStorage.setItem('employees', JSON.stringify(employees));
-                }
-
-                localStorage.setItem(`timeIn_${currentCitizenId}`, new Date().toTimeString().split(' ')[0]);
-                
-                updateDepartmentDropdown();
-                showDigitalBadge(employee);
-            } else {
-                alert(`คุณอยู่ห่างจากโกดังเกินกำหนด! ระยะห่างคือ ${Math.round(distance)} เมตร (ต้องไม่เกิน 100 เมตร)`);
-            }
-        },
-        (error) => { alert("ไม่สามารถดึงพิกัดได้ โปรดตรวจสอบการเปิด GPS บนอุปกรณ์"); },
-        { enableHighAccuracy: true }
-    );
+    return token;
 }
 
 function calculateDistance(lat1, lon1, lat2, lon2) {
     const R = 6371e3; 
-    const phi1 = lat1 * Math.PI / 180; const phi2 = lat2 * Math.PI / 180;
-    const deltaPhi = (lat2 - lat1) * Math.PI / 180; const deltaLambda = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) + Math.cos(phi1) * Math.cos(phi2) * Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
-    return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))); 
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
 }
 
-function showDigitalBadge(employee) {
-    checkinSection.classList.add('hidden'); 
-    if (document.getElementById('checkout-section')) {
-        document.getElementById('checkout-section').classList.add('hidden');
-    }
-    registerSection.classList.add('hidden'); 
-    badgeSection.classList.remove('hidden');
-    
-    document.getElementById('badge-name').textContent = `${employee.firstname} ${employee.lastname}`;
-    document.getElementById('badge-dept').textContent = `แผนกวันนี้: ${employee.currentDepartment}`;
-    
-    document.getElementById('badge-ot-detail').innerHTML = "";
-    document.getElementById('badge-cash-amount').style.display = "none";
-    
-    const statusTag = document.getElementById('badge-status-tag');
-    statusTag.textContent = "สแกนผ่าน GPS เรียบร้อย";
-    statusTag.className = "status-tag-premium";
-    statusTag.style.backgroundColor = "#e6fbf1";
-    statusTag.style.color = "#059669";
-    statusTag.style.border = "1px solid #a7f3d0";
+function handleCheckIn() {
+    const idInput = document.getElementById('citizen-id');
+    const deptInput = document.getElementById('department-select');
 
-    const randomColor = '#' + Math.floor(Math.random()*16777215).toString(16);
-    badgeSection.style.background = randomColor;
-
-    clearInterval(clockInterval); 
-    clockInterval = setInterval(() => {
-        const now = new Date();
-        document.getElementById('badge-date').textContent = `วันที่: ${now.getDate()}/${now.getMonth() + 1}/${now.getFullYear()}`;
-        document.getElementById('badge-clock').textContent = now.toTimeString().split(' ')[0];
-    }, 1000);
-}
-
-// ==========================================
-// 7. ระบบบันทึกออกงานและคำนวณรายได้
-// ==========================================
-const checkoutForm = document.getElementById('checkout-form');
-const checkoutCitizenIdInput = document.getElementById('checkout-citizen-id');
-const btnActionCheckout = document.getElementById('btn-action-checkout');
-const btnActionOT = document.getElementById('btn-action-ot');
-
-if (checkoutCitizenIdInput) {
-    checkoutCitizenIdInput.addEventListener('input', (e) => { e.target.value = e.target.value.replace(/\D/g, ''); });
-}
-
-function processEmployeeExit(citizenId, isOTMode) {
-    const attendanceToday = JSON.parse(localStorage.getItem('attendanceToday')) || {};
-    if (!attendanceToday[citizenId]) {
-        alert("ไม่พบประวัติการเข้างานของเลขบัตรนี้ในวันนี้ ไม่สามารถทำรายการได้");
+    if (!idInput || !deptInput) {
+        alert("❌ โค้ด HTML มีปัญหา หาช่องกรอกข้อมูลไม่เจอ");
         return;
     }
 
-    const thisDeviceID = getOrCreateDeviceID();
-    let deviceRegistry = JSON.parse(localStorage.getItem('deviceRegistry')) || {};
-    if (deviceRegistry[citizenId] && deviceRegistry[citizenId] !== thisDeviceID && citizenId !== "1101000120748") {
-        alert("❌ ปฏิเสธรายการ! มือถือเครื่องนี้ไม่ใช่เครื่องที่ลงทะเบียนเข้างานไว้ ห้ามกดออกแทนกันครับ");
+    const loginId = idInput.value.trim();
+    const loginDept = deptInput.value;
+
+    if (!loginId || !loginDept) {
+        alert("❌ กรุณากรอกเลขบัตรประชาชน และเลือกแผนกงานด้วยครับ");
         return;
     }
 
-    const employees = JSON.parse(localStorage.getItem('employees')) || {};
-    const empInfo = employees[citizenId] || { firstname: 'พนักงาน', lastname: 'รายวัน' };
-    
-    const now = new Date();
-    const checkoutTimeStr = now.toTimeString().split(' ')[0];
-    
-    const timeInArr = (localStorage.getItem(`timeIn_${citizenId}`) || "08:00:00").split(':');
-    const checkInTime = new Date();
-    checkInTime.setHours(parseInt(timeInArr[0]), parseInt(timeInArr[1]), parseInt(timeInArr[2]));
-    
-    let diffMs = now - checkInTime;
-    if (diffMs < 0) diffMs = 0;
-    let totalHours = Math.round((diffMs / (1000 * 60 * 60)) * 10) / 10; 
-    
-    const NORMAL_DAY_RATE = 375; 
-    const OT_HOUR_RATE = 70;
-    
-    let totalEarnings = 0;
-    let otHours = 0;
+    let employees = JSON.parse(localStorage.getItem('employees')) || {};
+    const employee = employees[loginId];
+    const currentToken = getOrCreateDeviceToken();
 
-    if (totalHours <= 8) {
-        totalEarnings = Math.round((totalHours / 8) * NORMAL_DAY_RATE);
-        otHours = 0;
-    } else {
-        otHours = Math.round((totalHours - 8) * 10) / 10;
-        totalEarnings = NORMAL_DAY_RATE + (otHours * OT_HOUR_RATE);
-    }
-    totalEarnings = Math.round(totalEarnings);
-
-    const checkoutData = JSON.parse(localStorage.getItem('checkoutDataToday')) || {};
-    checkoutData[citizenId] = { 
-        timeOut: checkoutTimeStr, 
-        totalHours: totalHours, 
-        otHours: otHours, 
-        cashAmount: totalEarnings,
-        statusMode: isOTMode ? "ทำ OT" : "เลิกงานปกติ"
-    };
-    localStorage.setItem('checkoutDataToday', JSON.stringify(checkoutData));
-
-    if(employees[citizenId]) {
-        employees[citizenId].lastActiveTime = now.toISOString();
-        localStorage.setItem('employees', JSON.stringify(employees));
-    }
-
-    checkinSection.classList.add('hidden');
-    if (document.getElementById('checkout-section')) {
-        document.getElementById('checkout-section').classList.add('hidden');
-    }
-    badgeSection.classList.remove('hidden');
-
-    document.getElementById('badge-name').textContent = `${empInfo.firstname} ${empInfo.lastname}`;
-    document.getElementById('badge-dept').textContent = `แผนกวันนี้: ${attendanceToday[citizenId]}`;
-    
-    const otDetail = document.getElementById('badge-ot-detail');
-    const cashAmount = document.getElementById('badge-cash-amount');
-    const statusTag = document.getElementById('badge-status-tag');
-    
-    otDetail.innerHTML = `เวลาลงบันทึก: <strong>${checkoutTimeStr} น.</strong><br>รวมชั่วโมงทำงาน: ${totalHours} ชม. (OT: ${otHours} ชม.)`;
-    cashAmount.style.display = "block";
-    cashAmount.innerHTML = `ยอดเงินที่ได้รับ: <strong style="font-size:2rem; color:#de1c60;">${totalEarnings}</strong> บาท`;
-    
-    if (isOTMode) {
-        statusTag.textContent = "ลงกะ OT เรียบร้อย - รอรับเงินสด";
-        statusTag.style.backgroundColor = "#fff7ed"; statusTag.style.color = "#ea580c"; statusTag.style.border = "1px solid #ffedd5";
-    } else {
-        statusTag.textContent = "เลิกงานปกติ - รอรับเงินสด";
-        statusTag.style.backgroundColor = "#f1f5f9"; statusTag.style.color = "#334155"; statusTag.style.border = "1px solid #e2e8f0";
-    }
-
-    badgeSection.style.background = "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)"; 
-    clearInterval(clockInterval);
-    document.getElementById('badge-date').textContent = new Date().toDateString();
-    document.getElementById('badge-clock').textContent = checkoutTimeStr;
-}
-
-if (btnActionCheckout) {
-    btnActionCheckout.addEventListener('click', () => {
-        const citizenId = checkoutCitizenIdInput.value.trim();
-        if (citizenId.length !== 13) { alert("กรุณากรอกเลขบัตรประชาชนให้ครบ 13 หลักก่อนกด"); return; }
-        processEmployeeExit(citizenId, false);
-    });
-}
-
-if (btnActionOT) {
-    btnActionOT.addEventListener('click', () => {
-        const citizenId = checkoutCitizenIdInput.value.trim();
-        if (citizenId.length !== 13) { alert("กรุณากรอกเลขบัตรประชาชนให้ครบ 13 หลักก่อนกด"); return; }
-        
-        const now = new Date();
-        if (now.getHours() < 17) {
-            alert("❌ ปฏิเสธรายการทำ OT! ระบบจะเปิดให้เข้ากะ OT ได้ตั้งแต่เวลา 17:00 น. เป็นต้นไปเท่านั้น");
+    // 📝 1. ถ้ายังไม่มีเลขนี้ในระบบ -> พาไปหน้าลงทะเบียนใหม่
+    if (!employee) {
+        // Strict Mode: ห้ามสมัครเครื่องที่ผูกกับคนอื่นแล้ว
+        const isDeviceUsed = Object.values(employees).some(emp => emp.deviceToken === currentToken);
+        if (isDeviceUsed) {
+            alert("❌ อุปกรณ์เครื่องนี้ถูกใช้ลงทะเบียนโดยพนักงานท่านอื่นไปแล้ว! \n(1 เครื่องสามารถลงทะเบียนได้แค่ 1 บัญชีเท่านั้น)");
             return;
         }
 
-        if (!navigator.geolocation) { alert("เครื่องของคุณไม่รองรับ GPS ไม่สามารถเช็คอิน OT ได้"); return; }
-        alert("ระบบกำลังตรวจเช็คตำแหน่ง GPS ว่าคุณยังปฏิบัติงานอยู่ในโกดังจริงหรือไม่...");
+        // เปิดหน้าลงทะเบียน
+        window.pendingLoginId = loginId;
+        window.pendingLoginDept = loginDept;
         
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const distance = calculateDistance(position.coords.latitude, position.coords.longitude, WAREHOUSE_LAT, WAREHOUSE_LON);
-                if (distance <= MAX_DISTANCE_METERS) {
-                    processEmployeeExit(citizenId, true);
-                } else {
-                    alert(`❌ บันทึก OT ล้มเหลว! คุณอยู่ห่างจากโกดังเกินกำหนด (${Math.round(distance)} เมตร)`);
-                }
-            },
-            (error) => { alert("ไม่สามารถดึงพิกัด GPS ได้"); },
-            { enableHighAccuracy: true }
-        );
-    });
+        document.getElementById('checkin-section').classList.add('hidden');
+        document.getElementById('checkout-section').classList.add('hidden');
+        document.getElementById('register-section').classList.remove('hidden');
+        return;
+    }
+
+    // 🔒 2. ตรวจสอบเวลาเปิด-ปิดระบบเช็คอิน
+    const now = new Date();
+    const currentTotalMinutes = (now.getHours() * 60) + now.getMinutes();
+    const config = JSON.parse(localStorage.getItem('checkin_window')) || { start: "00:00", end: "23:59" };
+    
+    const [startH, startM] = config.start.split(':').map(Number);
+    const [endH, endM] = config.end.split(':').map(Number);
+    const startMinutes = (startH * 60) + startM;
+    const endMinutes = (endH * 60) + endM;
+
+    let isTimeValid = false;
+    if (startMinutes <= endMinutes) {
+        isTimeValid = (currentTotalMinutes >= startMinutes && currentTotalMinutes <= endMinutes);
+    } else {
+        // กรณีข้ามคืน เช่น 22:00 ถึง 06:00
+        isTimeValid = (currentTotalMinutes >= startMinutes || currentTotalMinutes <= endMinutes);
+    }
+
+    // ตรวจสอบว่าแอดมินได้ทำการ "จองสิทธิ์" (Lock) ล่วงหน้าให้พนักงานคนนี้หรือไม่
+    let lockedSlots = JSON.parse(localStorage.getItem('lockedSlots')) || {};
+    const hasSpecialLock = !!lockedSlots[loginId];
+
+    if (!isTimeValid && !hasSpecialLock) {
+        alert(`❌ ไม่สามารถเข้าทำงานได้! \nระบบเช็คอินเปิดรับเฉพาะเวลา ${config.start} น. ถึง ${config.end} น. เท่านั้น`);
+        document.getElementById('citizen-id').value = "";
+        document.getElementById('department-select').value = "";
+        return; 
+    }
+
+    // ด่านตรวจสิทธิ์สแกนเครื่อง (กรณี VIP หรือเวลาปกติ)
+    const targetEmployee = employee || employees[loginId];
+    
+    if (targetEmployee.deviceToken && targetEmployee.deviceToken !== currentToken) {
+        alert("❌ ปฏิเสธการเข้างาน! อุปกรณ์เครื่องนี้ไม่ตรงกับที่ลงทะเบียนไว้");
+        return;
+    }
+    
+    // ป้องกันการเข้างานซ้ำในวันเดียวกัน และแสดง Badge ทันทีโดยไม่ต้องดึง GPS ใหม่
+    let attendanceToday = JSON.parse(localStorage.getItem('attendanceToday')) || {};
+    if (attendanceToday[loginId]) {
+        alert(`✅ คุณ ${targetEmployee.name || targetEmployee.firstname} ทำการเช็คอินเข้างานไปแล้ว ระบบบันทึกข้อมูลเรียบร้อยครับ! (โควตาแผนกจะไม่ถูกนับซ้ำ)`);
+        showPremiumBadge(targetEmployee, attendanceToday[loginId]);
+        return;
+    }
+
+    // ตรวจสอบโควตาแผนกว่าเต็มหรือไม่ (ถ้าไม่ได้ถูกจองล็อกไว้)
+    let depts = JSON.parse(localStorage.getItem('departments')) || [];
+    const deptIndex = depts.findIndex(d => d.name === loginDept);
+    if (deptIndex !== -1 && !hasSpecialLock) {
+        if (depts[deptIndex].current >= depts[deptIndex].limit) {
+            alert(`❌ ปฏิเสธการเข้างาน! โควตาแผนก ${loginDept} เต็มแล้ว (${depts[deptIndex].limit} คน)`);
+            return;
+        }
+    }
+
+    // บันทึก Token ให้ในกรณีที่ดึงมาจาก Mock Data แอดมิน หรือเพิ่งถูกล้างสิทธิ์มา
+    if (!targetEmployee.deviceToken) {
+        const isDeviceUsed = Object.values(employees).some(emp => emp.deviceToken === currentToken && emp.citizenId !== loginId);
+        if (isDeviceUsed) {
+            alert("❌ อุปกรณ์เครื่องนี้ถูกผูกใช้งานโดยพนักงานท่านอื่นไปแล้ว! \n(ไม่สามารถสวมรอยใช้เครื่องคนอื่นเข้างานได้)");
+            return;
+        }
+        targetEmployee.deviceToken = currentToken;
+        employees[loginId] = targetEmployee;
+        localStorage.setItem('employees', JSON.stringify(employees));
+    }
+
+    processGeoLocationAndCheckIn(targetEmployee, loginId, loginDept, currentTotalMinutes);
 }
 
-const btnBack = document.getElementById('btn-back');
-if (btnBack) {
-    btnBack.addEventListener('click', () => {
-        clearInterval(clockInterval); 
-        badgeSection.classList.add('hidden');
-        checkinSection.classList.remove('hidden');
-        
-        const checkoutSection = document.getElementById('checkout-section');
-        if (checkoutSection) checkoutSection.classList.remove('hidden');
-        
-        if (checkinForm) checkinForm.reset(); 
-        if (checkoutForm) checkoutForm.reset();
-        
-        updateDepartmentDropdown(); 
-    });
+function processGeoLocationAndCheckIn(employee, loginId, dept, currentMinutes) {
+    if (!navigator.geolocation) {
+        alert("❌ อุปกรณ์ไม่รองรับพิกัด GPS");
+        return;
+    }
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const userLat = position.coords.latitude;
+            const userLon = position.coords.longitude;
+            const distance = calculateDistance(WAREHOUSE_LAT, WAREHOUSE_LON, userLat, userLon);
+
+            if (distance > MAX_DISTANCE_METERS) {
+                // แจ้งเตือนระยะห่าง (อาจจะปิดไว้ชั่วคราวสำหรับการเทสบน PC)
+                // alert(`❌ ปฏิเสธการเข้างาน! อยู่ห่างจากโกดังเกินกำหนด (${Math.round(distance)} เมตร)`);
+                // return;
+                console.warn(`อยู่นอกพื้นที่ ${Math.round(distance)} เมตร แต่ข้ามการเช็คระยะเพื่อทดสอบ`);
+            }
+
+            let attendanceToday = JSON.parse(localStorage.getItem('attendanceToday')) || {};
+            const empName = employee.name || `${employee.firstname || ''} ${employee.lastname || ''}`.trim();
+            
+            let attendanceLog = JSON.parse(localStorage.getItem('attendance_log')) || [];
+            const now = new Date();
+            const checkInTimeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+            attendanceLog.push({
+                idCard: loginId,
+                name: empName,
+                department: dept,
+                checkInTime: checkInTimeStr,
+                status: currentMinutes > 570 ? "มาสาย" : "ปกติ",
+                date: now.toLocaleDateString('th-TH')
+            });
+            localStorage.setItem('attendance_log', JSON.stringify(attendanceLog));
+            
+            // บันทึกลงระบบกะประจำวัน (สำหรับหน้า Admin Dashboard)
+            attendanceToday[loginId] = dept;
+            localStorage.setItem('attendanceToday', JSON.stringify(attendanceToday));
+            localStorage.setItem(`timeIn_${loginId}`, checkInTimeStr);
+
+            // อัปเดตโควตาแผนก (ถ้าไม่ได้ถูก Admin ล็อกไว้ล่วงหน้า เพราะถ้าล็อกแล้วโควตาจะถูกหักไปตั้งแต่ตอนล็อก)
+            let lockedSlots = JSON.parse(localStorage.getItem('lockedSlots')) || {};
+            let depts = JSON.parse(localStorage.getItem('departments')) || [];
+            const deptIndex = depts.findIndex(d => d.name === dept);
+            if (deptIndex !== -1 && lockedSlots[loginId] !== dept) {
+                depts[deptIndex].current = (depts[deptIndex].current || 0) + 1;
+                localStorage.setItem('departments', JSON.stringify(depts));
+            }
+
+            alert(`✅ บันทึกเวลาเข้างานสำเร็จ! ยินดีต้อนรับคุณ ${empName}`);
+            showPremiumBadge(employee, dept);
+        },
+        (error) => {
+            alert("❌ ระบบดึงพิกัด GPS ล้มเหลว กรุณาอนุญาตสิทธิ์ตำแหน่งที่ตั้งบนเบราว์เซอร์");
+        }
+    );
 }
 
-// ==========================================
-// 🎨 ฟังก์ชันระบบเปลี่ยนสีธีมพื้นหลัง (Theme Switcher)
-// ==========================================
+function cancelRegistration() {
+    document.getElementById('register-section').classList.add('hidden');
+    document.getElementById('checkin-section').classList.remove('hidden');
+    document.getElementById('checkout-section').classList.remove('hidden');
+    document.getElementById('register-form').reset();
+    window.pendingLoginId = null;
+    window.pendingLoginDept = null;
+}
+
+function submitRegistration() {
+    const fname = document.getElementById('firstname').value.trim();
+    const lname = document.getElementById('lastname').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+
+    if (!fname || !lname || !phone) {
+        alert("❌ กรุณากรอกข้อมูลให้ครบถ้วน");
+        return;
+    }
+    
+    if (phone.length < 10) {
+        alert("❌ กรุณากรอกเบอร์โทรศัพท์ให้ครบ 10 หลัก");
+        return;
+    }
+
+    const currentToken = getOrCreateDeviceToken();
+    let employees = JSON.parse(localStorage.getItem('employees')) || {};
+
+    // ตรวจสอบว่าเครื่องนี้ถูกใช้ลงทะเบียนไปแล้วหรือไม่ (Strict 1-Device-1-Account)
+    const isDeviceUsed = Object.values(employees).some(emp => emp.deviceToken === currentToken);
+    if (isDeviceUsed) {
+        alert("❌ อุปกรณ์เครื่องนี้ถูกใช้ลงทะเบียนไปแล้ว! \n(1 เครื่องสามารถลงทะเบียนได้แค่ 1 บัญชีเท่านั้น)");
+        return;
+    }
+
+    const newEmployee = {
+        firstname: fname,
+        lastname: lname, 
+        phone: phone,
+        department: window.pendingLoginDept,
+        deviceToken: currentToken,
+        lastActiveTime: new Date().toISOString()
+    };
+    
+    employees[window.pendingLoginId] = newEmployee;
+    localStorage.setItem('employees', JSON.stringify(employees));
+    
+    alert("✅ ลงทะเบียนประวัติสำเร็จ กรุณาทำการเช็คอินเพื่อเข้างาน");
+    
+    document.getElementById('register-section').classList.add('hidden');
+    document.getElementById('checkin-section').classList.remove('hidden');
+    document.getElementById('checkout-section').classList.remove('hidden');
+    document.getElementById('register-form').reset();
+    
+    window.pendingLoginId = null;
+    window.pendingLoginDept = null;
+}
+
+function showPremiumBadge(employee, dept) {
+    document.getElementById('checkin-section').classList.add('hidden');
+    document.getElementById('checkout-section').classList.add('hidden');
+    document.getElementById('badge-section').classList.remove('hidden');
+    
+    const empName = employee.name || `${employee.firstname || ''} ${employee.lastname || ''}`.trim();
+    document.getElementById('badge-name').textContent = empName;
+    document.getElementById('badge-dept').textContent = `แผนกวันนี้: ${dept}`;
+
+    const dateEl = document.getElementById('badge-date');
+    const clockEl = document.getElementById('badge-clock');
+    
+    if (clockInterval) clearInterval(clockInterval);
+    clockInterval = setInterval(() => {
+        const d = new Date();
+        if(dateEl) dateEl.textContent = d.toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        if(clockEl) clockEl.textContent = d.toLocaleTimeString('th-TH');
+    }, 1000);
+}
+
+function backToMain() {
+    if (clockInterval) clearInterval(clockInterval);
+    document.getElementById('badge-section').classList.add('hidden');
+    document.getElementById('checkin-section').classList.remove('hidden');
+    document.getElementById('checkout-section').classList.remove('hidden');
+    document.getElementById('citizen-id').value = "";
+    document.getElementById('department-select').value = "";
+    document.getElementById('department-select').value = "";
+    populateIndexDeptDropdown();
+}
+
+function handleCheckOut(type) {
+    const logoutId = document.getElementById('checkout-citizen-id').value.trim();
+    if (!logoutId) {
+        alert("❌ กรุณากรอกเลขบัตรประชาชนก่อนกดปุ่มทำรายการ");
+        return;
+    }
+
+    if (type === 'ot') {
+        const currentHours = new Date().getHours();
+        // คอมเมนต์เงื่อนไขเวลา OT เพื่อทดสอบระบบ
+        // if (currentHours < 17) {
+        //     alert("❌ ยังไม่ถึงเวลาทำ OT (กดบันทึกเข้ากะ OT ได้ตั้งแต่เวลา 17:00 น. เป็นต้นไป)");
+        //     return;
+        // }
+    }
+
+    let employees = JSON.parse(localStorage.getItem('employees')) || {};
+    const employee = employees[logoutId];
+    if (!employee) {
+        alert("❌ ไม่พบประวัติพนักงานเลขนี้ในระบบ");
+        return;
+    }
+    
+    const empName = employee.name || `${employee.firstname || ''} ${employee.lastname || ''}`.trim();
+    
+    const now = new Date();
+    const timeOutStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+    let checkoutDataToday = JSON.parse(localStorage.getItem('checkoutDataToday')) || {};
+    
+    if (type === 'normal') {
+        const timeInStr = localStorage.getItem(`timeIn_${logoutId}`);
+        let workedText = "ไม่พบข้อมูลเวลาเข้างาน";
+        
+        if (timeInStr) {
+            const [inH, inM, inS] = timeInStr.split(':').map(Number);
+            const inDate = new Date(now);
+            inDate.setHours(inH || 0, inM || 0, inS || 0, 0);
+            
+            let diffMs = now.getTime() - inDate.getTime();
+            if (diffMs < 0) diffMs = 0;
+            
+            const diffH = Math.floor(diffMs / (1000 * 60 * 60));
+            const diffM = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+            const diffS = Math.floor((diffMs % (1000 * 60)) / 1000);
+            
+            workedText = `${diffH} ชั่วโมง ${diffM} นาที ${diffS} วินาที`;
+        }
+        
+        const confirmMsg = `ขณะนี้ท่านได้ทำงานมาแล้ว ${workedText}\nท่านยืนยันที่จะเลิกงานใช่หรือไม่?`;
+        if (!confirm(confirmMsg)) {
+            return;
+        }
+
+        alert(`🚌 บันทึกเวลาเลิกงานปกติสำเร็จ! ให้คุณ ${empName}`);
+        checkoutDataToday[logoutId] = { statusMode: "เลิกงาน", timeOut: timeOutStr, cashAmount: 0 };
+    } else if (type === 'ot') {
+        if (checkoutDataToday[logoutId] && checkoutDataToday[logoutId].statusMode === 'เลิกงาน') {
+            alert("❌ คุณได้กดเลิกงานปกติไปแล้ว ไม่สามารถเข้ากะ OT ได้!\n(กรุณาติดต่อแอดมินหากมีข้อผิดพลาด)");
+            return;
+        }
+
+        const otConfig = JSON.parse(localStorage.getItem('ot_config')) || { start: "17:00", end: "20:00", limit: 10 };
+        const currentTotalMinutes = (now.getHours() * 60) + now.getMinutes();
+        const [startH, startM] = otConfig.start.split(':').map(Number);
+        const [endH, endM] = otConfig.end.split(':').map(Number);
+        const startMinutes = (startH * 60) + startM;
+        const endMinutes = (endH * 60) + endM;
+
+        let isTimeValid = false;
+        if (startMinutes <= endMinutes) {
+            isTimeValid = (currentTotalMinutes >= startMinutes && currentTotalMinutes <= endMinutes);
+        } else {
+            isTimeValid = (currentTotalMinutes >= startMinutes || currentTotalMinutes <= endMinutes);
+        }
+
+        if (!isTimeValid) {
+            alert(`❌ ไม่สามารถเข้ากะ OT ได้! \nระบบเปิดรับสมัคร OT เฉพาะเวลา ${otConfig.start} น. ถึง ${otConfig.end} น. เท่านั้น`);
+            return;
+        }
+
+        let otCount = 0;
+        for (const id in checkoutDataToday) {
+            if (checkoutDataToday[id].statusMode === 'ทำ OT' || checkoutDataToday[id].statusMode === 'ออก OT') {
+                otCount++;
+            }
+        }
+        
+        if (!checkoutDataToday[logoutId] || (checkoutDataToday[logoutId].statusMode !== 'ทำ OT' && checkoutDataToday[logoutId].statusMode !== 'ออก OT')) {
+            if (otCount >= otConfig.limit) {
+                alert(`❌ ปฏิเสธการเข้า OT! โควตา OT เต็มแล้ว (รับจำกัด ${otConfig.limit} คน)`);
+                return;
+            }
+        }
+
+        let startTimeMs = now.getTime();
+        // สามารถเข้าสายได้ 10 นาที (ปัดเป็นเวลาเริ่ม OT)
+        if (now.getHours() === startH && now.getMinutes() >= startM && now.getMinutes() <= startM + 10) {
+            let fakeStart = new Date(now);
+            fakeStart.setHours(startH, startM, 0, 0);
+            startTimeMs = fakeStart.getTime();
+        }
+
+        alert(`🔥 บันทึกเข้ากะ OT สำเร็จ! ให้คุณ ${empName}`);
+        checkoutDataToday[logoutId] = { 
+            statusMode: "ทำ OT", 
+            timeOut: timeOutStr, 
+            cashAmount: 0,
+            otStartTime: startTimeMs
+        };
+    } else if (type === 'ot_out') {
+        const cData = checkoutDataToday[logoutId];
+        if (!cData || cData.statusMode !== "ทำ OT" || !cData.otStartTime) {
+            alert("❌ คุณยังไม่ได้กดปุ่ม 'บันทึกเข้ากะ OT' หรือไม่ได้อยู่ในสถานะทำ OT");
+            return;
+        }
+        
+        const startTimeMs = cData.otStartTime;
+        const endTimeMs = now.getTime();
+        
+        let diffTotalSecs = Math.max(0, Math.floor((endTimeMs - startTimeMs) / 1000));
+        const h = Math.floor(diffTotalSecs / 3600);
+        const m = Math.floor((diffTotalSecs % 3600) / 60);
+        const s = diffTotalSecs % 60;
+        const exactTimeText = `${h} ชั่วโมง ${m} นาที ${s} วินาที`;
+
+        let diffMins = diffTotalSecs / 60;
+        
+        // ปัดเศษนาที (29->30, 59->60) (ครึ่งชั่วโมง)
+        let roundedMins = Math.round(diffMins / 30) * 30;
+        
+        // ชั่วโมงละ 72 บาท
+        let earnedCash = (roundedMins / 60) * 72;
+        
+        alert(`🌙 บันทึกเวลาออก OT สำเร็จ! ให้คุณ ${empName}\n\nระยะเวลาทำ OT จริง: ${exactTimeText}\n(ปัดเป็นจำนวน: ${roundedMins} นาที สำหรับคิดเงิน)\nยอดเงิน OT: ${earnedCash} บาท`);
+        checkoutDataToday[logoutId] = { 
+            statusMode: "ออก OT", 
+            timeOut: timeOutStr, 
+            cashAmount: earnedCash,
+            otStartTime: startTimeMs,
+            otEndMins: roundedMins
+        };
+    }
+    
+    localStorage.setItem('checkoutDataToday', JSON.stringify(checkoutDataToday));
+    document.getElementById('checkout-citizen-id').value = "";
+}
+
 function changeTheme(themeName) {
-    document.body.classList.remove('theme-mode-white', 'theme-mode-pink', 'theme-mode-black');
-    document.body.classList.add(`theme-mode-${themeName}`);
-    localStorage.setItem('user_app_theme', themeName);
+    document.body.className = ''; 
+    document.body.classList.add(`theme-${themeName}`);
+    localStorage.setItem('warehouse_theme', themeName);
 }
 
-(function loadSavedTheme() {
-    const savedTheme = localStorage.getItem('user_app_theme') || 'white';
+function updateOTButtonStatus() {
+    const otBtn = document.getElementById('btn-action-ot');
+    const otBtnStatus = document.getElementById('ot-btn-status');
+    if (!otBtn || !otBtnStatus) return;
+
+    let otConfig = JSON.parse(localStorage.getItem('ot_config')) || { start: "17:00", end: "20:00", limit: 10 };
+    if (!otConfig || !otConfig.start || !otConfig.end) {
+        otBtn.style.background = 'linear-gradient(135deg, #94a3b8 0%, #64748b 100%)';
+        otBtn.style.boxShadow = 'none';
+        otBtn.style.animation = 'none';
+        otBtnStatus.innerText = "(ยังไม่ตั้งค่า OT)";
+        return;
+    }
+
+    const now = new Date();
+    const currentTotalMinutes = now.getHours() * 60 + now.getMinutes();
+    const [startH, startM] = otConfig.start.split(':').map(Number);
+    const [endH, endM] = otConfig.end.split(':').map(Number);
+    const startMinutes = startH * 60 + startM;
+    const endMinutes = endH * 60 + endM;
+
+    let isTimeValid = false;
+    let isBeforeStart = false;
+    
+    if (startMinutes <= endMinutes) {
+        isTimeValid = (currentTotalMinutes >= startMinutes && currentTotalMinutes <= endMinutes);
+        isBeforeStart = (currentTotalMinutes < startMinutes);
+    } else {
+        isTimeValid = (currentTotalMinutes >= startMinutes || currentTotalMinutes <= endMinutes);
+        isBeforeStart = (currentTotalMinutes > endMinutes && currentTotalMinutes < startMinutes);
+    }
+
+    let checkoutDataToday = JSON.parse(localStorage.getItem('checkoutDataToday')) || {};
+    let otCount = 0;
+    for (const id in checkoutDataToday) {
+        if (checkoutDataToday[id].statusMode === 'ทำ OT' || checkoutDataToday[id].statusMode === 'ออก OT') {
+            otCount++;
+        }
+    }
+
+    if (isBeforeStart) {
+        otBtn.style.background = 'linear-gradient(135deg, #94a3b8 0%, #64748b 100%)';
+        otBtn.style.boxShadow = 'none';
+        otBtn.style.animation = 'none';
+        otBtnStatus.innerText = `(รอเปิดเวลา ${otConfig.start})`;
+    } else if (isTimeValid) {
+        if (otCount >= otConfig.limit) {
+            otBtn.style.background = 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)';
+            otBtn.style.boxShadow = 'none';
+            otBtn.style.animation = 'none';
+            otBtnStatus.innerText = `(❌ โควตาเต็ม ${otCount}/${otConfig.limit})`;
+        } else {
+            otBtn.style.background = 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)';
+            otBtn.style.boxShadow = '0 4px 12px rgba(234, 88, 12, 0.4)';
+            otBtn.style.animation = 'pulse-fire 2s infinite';
+            otBtnStatus.innerText = `(🔥 ว่าง ${otConfig.limit - otCount}/${otConfig.limit})`;
+        }
+    } else {
+        otBtn.style.background = 'linear-gradient(135deg, #94a3b8 0%, #64748b 100%)';
+        otBtn.style.boxShadow = 'none';
+        otBtn.style.animation = 'none';
+        otBtnStatus.innerText = `(ปิดรับ OT แล้ว)`;
+    }
+}
+
+window.onload = function() {
+    const savedTheme = localStorage.getItem('warehouse_theme') || 'pink';
     changeTheme(savedTheme);
-})();
+    getOrCreateDeviceToken();
+    populateIndexDeptDropdown();
+    
+    updateOTButtonStatus();
+    setInterval(updateOTButtonStatus, 15000); // Check every 15 seconds
+
+    // Load Announcement
+    const announcement = JSON.parse(localStorage.getItem('warehouse_announcement'));
+    const annBanner = document.getElementById('announcement-banner');
+    const annText = document.getElementById('announcement-text');
+    if (annBanner && annText && announcement && announcement.isActive && announcement.text) {
+        annText.textContent = announcement.text;
+        annBanner.style.display = 'flex';
+    }
+
+    const idInput = document.getElementById('citizen-id');
+    const deptSelect = document.getElementById('department-select');
+    const lockMessage = document.getElementById('lock-status-message');
+    
+    if (idInput && deptSelect && lockMessage) {
+        idInput.addEventListener('input', (e) => {
+            const loginId = e.target.value.trim();
+            if (loginId.length === 13) {
+                const lockedSlots = JSON.parse(localStorage.getItem('lockedSlots')) || {};
+                const lockedDept = lockedSlots[loginId];
+                if (lockedDept) {
+                    deptSelect.value = lockedDept;
+                    deptSelect.disabled = true;
+                    lockMessage.innerHTML = `<i class="fa-solid fa-lock"></i> แอดมินจองสิทธิ์คุณไว้ที่แผนก ${lockedDept} แล้ว (ไม่ต้องเลือกใหม่)`;
+                    lockMessage.style.display = 'block';
+                } else {
+                    deptSelect.disabled = false;
+                    lockMessage.style.display = 'none';
+                }
+            } else {
+                deptSelect.disabled = false;
+                lockMessage.style.display = 'none';
+            }
+        });
+    }
+};
+
+function populateIndexDeptDropdown() {
+    const deptSelect = document.getElementById('department-select');
+    if (!deptSelect) return;
+    
+    // โหลดแผนกจาก LocalStorage ถ้าไม่มีให้ใช้ค่าตั้งต้น
+    let depts = JSON.parse(localStorage.getItem('departments'));
+    if (!depts || depts.length === 0) {
+        depts = [
+            { name: "IT", limit: 10, current: 0 },
+            { name: "Warehouse staff", limit: 50, current: 0 },
+            { name: "Content Creator", limit: 20, current: 0 }
+        ];
+        localStorage.setItem('departments', JSON.stringify(depts));
+    }
+    
+    deptSelect.innerHTML = '<option value="">-- กรุณาเลือกแผนก --</option>';
+    
+    depts.forEach(d => {
+        const isFull = d.current >= d.limit;
+        const text = isFull ? `${d.name} (${d.current}/${d.limit}) เต็มแล้ว` : `${d.name} (${d.current}/${d.limit}) ยังว่าง`;
+        const option = document.createElement('option');
+        option.value = d.name;
+        option.textContent = text;
+        if (isFull) option.disabled = true;
+        deptSelect.appendChild(option);
+    });
+}
+
+function resetCurrentDeviceToken() {
+    const isConfirm = confirm("🔓 คุณต้องการล้างสิทธิ์อุปกรณ์เครื่องนี้เพื่อให้พนักงานคนอื่นยืมใช้งานใช่หรือไม่?");
+    if (isConfirm) {
+        localStorage.removeItem('warehouse_device_token');
+        alert("✅ ปลดล็อกอุปกรณ์สำเร็จ! เครื่องนี้พร้อมสำหรับให้พนักงานคนอื่นใช้ลงทะเบียนหรือเข้างานแล้ว");
+        location.reload();
+    }
+}
