@@ -1,6 +1,6 @@
-const WAREHOUSE_LAT = 14.027750; 
-const WAREHOUSE_LON = 100.375694; 
-const MAX_DISTANCE_METERS = 2000; 
+const WAREHOUSE_LAT = 14.027750;
+const WAREHOUSE_LON = 100.375694;
+const MAX_DISTANCE_METERS = "";
 
 let clockInterval = null;
 
@@ -14,13 +14,13 @@ function getOrCreateDeviceToken() {
 }
 
 function calculateDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371e3; 
+    const R = 6371e3;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-              Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
 }
 
@@ -57,7 +57,7 @@ function handleCheckIn() {
         // เปิดหน้าลงทะเบียน
         window.pendingLoginId = loginId;
         window.pendingLoginDept = loginDept;
-        
+
         document.getElementById('checkin-section').classList.add('hidden');
         document.getElementById('checkout-section').classList.add('hidden');
         document.getElementById('register-section').classList.remove('hidden');
@@ -68,7 +68,7 @@ function handleCheckIn() {
     const now = new Date();
     const currentTotalMinutes = (now.getHours() * 60) + now.getMinutes();
     const config = JSON.parse(localStorage.getItem('checkin_window')) || { start: "00:00", end: "23:59" };
-    
+
     const [startH, startM] = config.start.split(':').map(Number);
     const [endH, endM] = config.end.split(':').map(Number);
     const startMinutes = (startH * 60) + startM;
@@ -90,17 +90,17 @@ function handleCheckIn() {
         alert(`❌ ไม่สามารถเข้าทำงานได้! \nระบบเช็คอินเปิดรับเฉพาะเวลา ${config.start} น. ถึง ${config.end} น. เท่านั้น`);
         document.getElementById('citizen-id').value = "";
         document.getElementById('department-select').value = "";
-        return; 
+        return;
     }
 
     // ด่านตรวจสิทธิ์สแกนเครื่อง (กรณี VIP หรือเวลาปกติ)
     const targetEmployee = employee || employees[loginId];
-    
+
     if (targetEmployee.deviceToken && targetEmployee.deviceToken !== currentToken) {
         alert("❌ ปฏิเสธการเข้างาน! อุปกรณ์เครื่องนี้ไม่ตรงกับที่ลงทะเบียนไว้");
         return;
     }
-    
+
     // ป้องกันการเข้างานซ้ำในวันเดียวกัน และแสดง Badge ทันทีโดยไม่ต้องดึง GPS ใหม่
     let attendanceToday = JSON.parse(localStorage.getItem('attendanceToday')) || {};
     if (attendanceToday[loginId]) {
@@ -154,7 +154,7 @@ function processGeoLocationAndCheckIn(employee, loginId, dept, currentMinutes) {
 
             let attendanceToday = JSON.parse(localStorage.getItem('attendanceToday')) || {};
             const empName = employee.name || `${employee.firstname || ''} ${employee.lastname || ''}`.trim();
-            
+
             let attendanceLog = JSON.parse(localStorage.getItem('attendance_log')) || [];
             const now = new Date();
             const checkInTimeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -168,7 +168,7 @@ function processGeoLocationAndCheckIn(employee, loginId, dept, currentMinutes) {
                 date: now.toLocaleDateString('th-TH')
             });
             localStorage.setItem('attendance_log', JSON.stringify(attendanceLog));
-            
+
             // บันทึกลงระบบกะประจำวัน (สำหรับหน้า Admin Dashboard)
             attendanceToday[loginId] = dept;
             localStorage.setItem('attendanceToday', JSON.stringify(attendanceToday));
@@ -210,7 +210,7 @@ function submitRegistration() {
         alert("❌ กรุณากรอกข้อมูลให้ครบถ้วน");
         return;
     }
-    
+
     if (phone.length < 10) {
         alert("❌ กรุณากรอกเบอร์โทรศัพท์ให้ครบ 10 หลัก");
         return;
@@ -228,23 +228,23 @@ function submitRegistration() {
 
     const newEmployee = {
         firstname: fname,
-        lastname: lname, 
+        lastname: lname,
         phone: phone,
         department: window.pendingLoginDept,
         deviceToken: currentToken,
         lastActiveTime: new Date().toISOString()
     };
-    
+
     employees[window.pendingLoginId] = newEmployee;
     localStorage.setItem('employees', JSON.stringify(employees));
-    
+
     alert("✅ ลงทะเบียนประวัติสำเร็จ กรุณาทำการเช็คอินเพื่อเข้างาน");
-    
+
     document.getElementById('register-section').classList.add('hidden');
     document.getElementById('checkin-section').classList.remove('hidden');
     document.getElementById('checkout-section').classList.remove('hidden');
     document.getElementById('register-form').reset();
-    
+
     window.pendingLoginId = null;
     window.pendingLoginDept = null;
 }
@@ -253,19 +253,19 @@ function showPremiumBadge(employee, dept) {
     document.getElementById('checkin-section').classList.add('hidden');
     document.getElementById('checkout-section').classList.add('hidden');
     document.getElementById('badge-section').classList.remove('hidden');
-    
+
     const empName = employee.name || `${employee.firstname || ''} ${employee.lastname || ''}`.trim();
     document.getElementById('badge-name').textContent = empName;
     document.getElementById('badge-dept').textContent = `แผนกวันนี้: ${dept}`;
 
     const dateEl = document.getElementById('badge-date');
     const clockEl = document.getElementById('badge-clock');
-    
+
     if (clockInterval) clearInterval(clockInterval);
     clockInterval = setInterval(() => {
         const d = new Date();
-        if(dateEl) dateEl.textContent = d.toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-        if(clockEl) clockEl.textContent = d.toLocaleTimeString('th-TH');
+        if (dateEl) dateEl.textContent = d.toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        if (clockEl) clockEl.textContent = d.toLocaleTimeString('th-TH');
     }, 1000);
 }
 
@@ -275,7 +275,6 @@ function backToMain() {
     document.getElementById('checkin-section').classList.remove('hidden');
     document.getElementById('checkout-section').classList.remove('hidden');
     document.getElementById('citizen-id').value = "";
-    document.getElementById('department-select').value = "";
     document.getElementById('department-select').value = "";
     populateIndexDeptDropdown();
 }
@@ -302,32 +301,32 @@ function handleCheckOut(type) {
         alert("❌ ไม่พบประวัติพนักงานเลขนี้ในระบบ");
         return;
     }
-    
+
     const empName = employee.name || `${employee.firstname || ''} ${employee.lastname || ''}`.trim();
-    
+
     const now = new Date();
     const timeOutStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
     let checkoutDataToday = JSON.parse(localStorage.getItem('checkoutDataToday')) || {};
-    
+
     if (type === 'normal') {
         const timeInStr = localStorage.getItem(`timeIn_${logoutId}`);
         let workedText = "ไม่พบข้อมูลเวลาเข้างาน";
-        
+
         if (timeInStr) {
             const [inH, inM, inS] = timeInStr.split(':').map(Number);
             const inDate = new Date(now);
             inDate.setHours(inH || 0, inM || 0, inS || 0, 0);
-            
+
             let diffMs = now.getTime() - inDate.getTime();
             if (diffMs < 0) diffMs = 0;
-            
+
             const diffH = Math.floor(diffMs / (1000 * 60 * 60));
             const diffM = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
             const diffS = Math.floor((diffMs % (1000 * 60)) / 1000);
-            
+
             workedText = `${diffH} ชั่วโมง ${diffM} นาที ${diffS} วินาที`;
         }
-        
+
         const confirmMsg = `ขณะนี้ท่านได้ทำงานมาแล้ว ${workedText}\nท่านยืนยันที่จะเลิกงานใช่หรือไม่?`;
         if (!confirm(confirmMsg)) {
             return;
@@ -366,7 +365,7 @@ function handleCheckOut(type) {
                 otCount++;
             }
         }
-        
+
         if (!checkoutDataToday[logoutId] || (checkoutDataToday[logoutId].statusMode !== 'ทำ OT' && checkoutDataToday[logoutId].statusMode !== 'ออก OT')) {
             if (otCount >= otConfig.limit) {
                 alert(`❌ ปฏิเสธการเข้า OT! โควตา OT เต็มแล้ว (รับจำกัด ${otConfig.limit} คน)`);
@@ -383,9 +382,9 @@ function handleCheckOut(type) {
         }
 
         alert(`🔥 บันทึกเข้ากะ OT สำเร็จ! ให้คุณ ${empName}`);
-        checkoutDataToday[logoutId] = { 
-            statusMode: "ทำ OT", 
-            timeOut: timeOutStr, 
+        checkoutDataToday[logoutId] = {
+            statusMode: "ทำ OT",
+            timeOut: timeOutStr,
             cashAmount: 0,
             otStartTime: startTimeMs
         };
@@ -395,10 +394,10 @@ function handleCheckOut(type) {
             alert("❌ คุณยังไม่ได้กดปุ่ม 'บันทึกเข้ากะ OT' หรือไม่ได้อยู่ในสถานะทำ OT");
             return;
         }
-        
+
         const startTimeMs = cData.otStartTime;
         const endTimeMs = now.getTime();
-        
+
         let diffTotalSecs = Math.max(0, Math.floor((endTimeMs - startTimeMs) / 1000));
         const h = Math.floor(diffTotalSecs / 3600);
         const m = Math.floor((diffTotalSecs % 3600) / 60);
@@ -406,29 +405,29 @@ function handleCheckOut(type) {
         const exactTimeText = `${h} ชั่วโมง ${m} นาที ${s} วินาที`;
 
         let diffMins = diffTotalSecs / 60;
-        
+
         // ปัดเศษนาที (29->30, 59->60) (ครึ่งชั่วโมง)
         let roundedMins = Math.round(diffMins / 30) * 30;
-        
+
         // ชั่วโมงละ 72 บาท
         let earnedCash = (roundedMins / 60) * 72;
-        
+
         alert(`🌙 บันทึกเวลาออก OT สำเร็จ! ให้คุณ ${empName}\n\nระยะเวลาทำ OT จริง: ${exactTimeText}\n(ปัดเป็นจำนวน: ${roundedMins} นาที สำหรับคิดเงิน)\nยอดเงิน OT: ${earnedCash} บาท`);
-        checkoutDataToday[logoutId] = { 
-            statusMode: "ออก OT", 
-            timeOut: timeOutStr, 
+        checkoutDataToday[logoutId] = {
+            statusMode: "ออก OT",
+            timeOut: timeOutStr,
             cashAmount: earnedCash,
             otStartTime: startTimeMs,
             otEndMins: roundedMins
         };
     }
-    
+
     localStorage.setItem('checkoutDataToday', JSON.stringify(checkoutDataToday));
     document.getElementById('checkout-citizen-id').value = "";
 }
 
 function changeTheme(themeName) {
-    document.body.className = ''; 
+    document.body.className = '';
     document.body.classList.add(`theme-${themeName}`);
     localStorage.setItem('warehouse_theme', themeName);
 }
@@ -456,7 +455,7 @@ function updateOTButtonStatus() {
 
     let isTimeValid = false;
     let isBeforeStart = false;
-    
+
     if (startMinutes <= endMinutes) {
         isTimeValid = (currentTotalMinutes >= startMinutes && currentTotalMinutes <= endMinutes);
         isBeforeStart = (currentTotalMinutes < startMinutes);
@@ -498,12 +497,12 @@ function updateOTButtonStatus() {
     }
 }
 
-window.onload = function() {
+window.onload = function () {
     const savedTheme = localStorage.getItem('warehouse_theme') || 'pink';
     changeTheme(savedTheme);
     getOrCreateDeviceToken();
     populateIndexDeptDropdown();
-    
+
     updateOTButtonStatus();
     setInterval(updateOTButtonStatus, 15000); // Check every 15 seconds
 
@@ -519,7 +518,7 @@ window.onload = function() {
     const idInput = document.getElementById('citizen-id');
     const deptSelect = document.getElementById('department-select');
     const lockMessage = document.getElementById('lock-status-message');
-    
+
     if (idInput && deptSelect && lockMessage) {
         idInput.addEventListener('input', (e) => {
             const loginId = e.target.value.trim();
@@ -546,7 +545,7 @@ window.onload = function() {
 function populateIndexDeptDropdown() {
     const deptSelect = document.getElementById('department-select');
     if (!deptSelect) return;
-    
+
     // โหลดแผนกจาก LocalStorage ถ้าไม่มีให้ใช้ค่าตั้งต้น
     let depts = JSON.parse(localStorage.getItem('departments'));
     if (!depts || depts.length === 0) {
@@ -557,9 +556,9 @@ function populateIndexDeptDropdown() {
         ];
         localStorage.setItem('departments', JSON.stringify(depts));
     }
-    
+
     deptSelect.innerHTML = '<option value="">-- กรุณาเลือกแผนก --</option>';
-    
+
     depts.forEach(d => {
         const isFull = d.current >= d.limit;
         const text = isFull ? `${d.name} (${d.current}/${d.limit}) เต็มแล้ว` : `${d.name} (${d.current}/${d.limit}) ยังว่าง`;
